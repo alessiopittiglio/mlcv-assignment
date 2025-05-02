@@ -1,18 +1,15 @@
 import lightning as L
-from torchvision.transforms import v2
 from torch.utils.data import DataLoader
 from dataset import StreetHazardsDataset
 
 class StreetHazardsDataModule(L.LightningDataModule):
-    def __init__(self, data_dir: str = "data/", batch_size: int = 32, num_workers: int = 4):
+    def __init__(self, data_dir: str = "data/", batch_size: int = 32, num_workers: int = 4, train_transform=None, eval_transform=None):
         super().__init__()
         self.data_dir = data_dir
         self.batch_size = batch_size
         self.num_workers = num_workers
-        self.train_transform = v2.Compose([
-            v2.ToImage()
-        ])
-        self.eval_transform = None
+        self.train_transform = train_transform
+        self.eval_transform = eval_transform
 
     def prepare_data(self):
         pass
