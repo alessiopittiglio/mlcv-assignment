@@ -1,16 +1,15 @@
 import os
 import json
-import numpy as np
 import torch
 from PIL import Image
 from torch.utils.data import Dataset
+from torchvision import tv_tensors
 
 class StreetHazardsDataset(Dataset):
-    def __init__(self, root_dir, split='train', transform=None, target_transform=None):
+    def __init__(self, root_dir, split='train', transform=None):
         self.root_dir = root_dir
         self.split = split
         self.transform = transform
-        self.target_transform = target_transform
         self.samples = []
 
         if split == 'val':
@@ -53,14 +52,12 @@ class StreetHazardsDataset(Dataset):
             print(f"File not found: {img_path} or {mask_path}")
             return None
         
+        mask = tv_tensors.Mask(mask)
+
         if self.transform:
             image, mask = self.transform(image, mask)
-
         if isinstance(mask, torch.Tensor):
             mask = mask.squeeze(0).long()
-        elif isinstance(mask, Image.Image):
-            mask = torch.from_numpy(np.array(mask)).long()
-
         return image, mask
 
 if __name__ == "__main__":
