@@ -14,7 +14,7 @@ class StreetHazardsDataModule(L.LightningDataModule):
     def prepare_data(self):
         pass
 
-    def setup(self, stage: str):
+    def setup(self, stage: str = None):
         if stage == 'fit' or stage is None:
             self.train_dataset = StreetHazardsDataset(
                 root_dir=self.data_dir,
