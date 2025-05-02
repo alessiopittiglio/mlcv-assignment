@@ -23,7 +23,7 @@ class StreetHazardsDataset(Dataset):
 
         with open(odgt_path, 'r') as f:
             data = json.loads(f.read())
-
+        
         for line in data:
             img_path = root_dir / split_folder / line['fpath_img']
             ann_path = root_dir / split_folder / line['fpath_segm']
@@ -39,12 +39,12 @@ class StreetHazardsDataset(Dataset):
 
     def __len__(self):
         return len(self.samples)
-    
+
     def __getitem__(self, idx):
         sample = self.samples[idx]
         img_path = sample['img']
         mask_path = sample['mask']
-
+        
         try:
             image = Image.open(img_path).convert("RGB")
             mask = Image.open(mask_path).convert('L')
@@ -56,8 +56,10 @@ class StreetHazardsDataset(Dataset):
 
         if self.transform:
             image, mask = self.transform(image, mask)
+        
         if isinstance(mask, torch.Tensor):
             mask = mask.squeeze(0).long()
+        
         return image, mask
 
 if __name__ == "__main__":
