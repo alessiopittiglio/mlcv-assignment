@@ -1,0 +1,14 @@
+[build-system]
+requires = ["setuptools>=64.0.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "mlcv-openset-segmentation"
+version = "0.1.0"
+description = "Open-world semantic segmentation of unexpected objects on roads."
+authors = [
+  { name = "Alessio Pittiglio", email = "alessiopittiglio@icloud.com" }
+]
+
+[tool.setuptools.packages.find]
+where = ["src"]
