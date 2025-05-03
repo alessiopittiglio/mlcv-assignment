@@ -75,11 +75,20 @@ class StreetHazardsDataset(Dataset):
         try:
             image = Image.open(img_path).convert("RGB")
             mask = Image.open(mask_path).convert('L')
+
+            mask_raw = np.array(mask)
+            mask_target = np.full_like(mask, IGNORE_INDEX)
+
+            unique_ids = np.unique(mask_raw)
+            for raw_id in unique_ids:
+                target_id = self.RAW_TO_TARGET_MAPPING.get(raw_id, IGNORE_INDEX)
+                mask_target[mask_raw == raw_id] = target_id
+
         except FileNotFoundError:
             print(f"File not found: {img_path} or {mask_path}")
             return None
         
-        mask = tv_tensors.Mask(mask)
+        mask = tv_tensors.Mask(mask_target)
 
         if self.transform:
             image, mask = self.transform(image, mask)
