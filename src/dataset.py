@@ -1,11 +1,38 @@
 import os
 import json
+import numpy as np
 import torch
 from PIL import Image
 from torch.utils.data import Dataset
 from torchvision import tv_tensors
+IGNORE_INDEX = 255
 
 class StreetHazardsDataset(Dataset):
+    KNOWN_CLASSES = [
+        'building', 'fence', 'other', 'pedestrian', 'pole', 'road line',
+        'road', 'sidewalk', 'vegetation', 'car', 'wall', 'traffic sign'
+    ]
+    CLASSES = KNOWN_CLASSES + ['anomaly']
+    CLASS_TO_ID = {name: i for i, name in enumerate(CLASSES)}
+
+    RAW_TO_TARGET_MAPPING = {
+        0: IGNORE_INDEX,
+        1: IGNORE_INDEX,
+        2: CLASS_TO_ID['building'],
+        3: CLASS_TO_ID['fence'],
+        4: CLASS_TO_ID['other'],
+        5: CLASS_TO_ID['pedestrian'],
+        6: CLASS_TO_ID['pole'],
+        7: CLASS_TO_ID['road line'],
+        8: CLASS_TO_ID['road'],
+        9: CLASS_TO_ID['sidewalk'],
+        10: CLASS_TO_ID['vegetation'],
+        11: CLASS_TO_ID['car'],
+        12: CLASS_TO_ID['wall'],
+        13: CLASS_TO_ID['traffic sign'],
+        14: CLASS_TO_ID['anomaly'],
+    }
+
     def __init__(self, root_dir, split='train', transform=None):
         self.root_dir = root_dir
         self.split = split
