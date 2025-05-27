@@ -55,8 +55,11 @@ class StreetHazardsDataset(Dataset):
         
         odgt_path = Path(self.root_dir) / split_folder / odgt_filename
 
-        with open(odgt_path, 'r') as f:
-            data = json.loads(f.read())
+        try:
+            with open(odgt_path, 'r') as f:
+                samples = json.load(f)
+        except FileNotFoundError:
+            raise FileNotFoundError(f"ODGT file not found: {odgt_path}")
         
         for line in data:
             img_path = self.root_dir / split_folder / line['fpath_img']
