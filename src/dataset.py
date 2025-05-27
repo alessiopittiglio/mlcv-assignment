@@ -2,6 +2,7 @@ import os
 import json
 import numpy as np
 import torch
+from pathlib import Path
 from PIL import Image
 from torch.utils.data import Dataset
 from torchvision.tv_tensors import Mask
@@ -52,14 +53,14 @@ class StreetHazardsDataset(Dataset):
             split_folder = split
             odgt_filename = f'{split}.odgt'
         
-        odgt_path = os.path.join(root_dir, split_folder, odgt_filename)
+        odgt_path = Path(self.root_dir) / split_folder / odgt_filename
 
         with open(odgt_path, 'r') as f:
             data = json.loads(f.read())
         
         for line in data:
-            img_path = root_dir / split_folder / line['fpath_img']
-            ann_path = root_dir / split_folder / line['fpath_segm']
+            img_path = self.root_dir / split_folder / line['fpath_img']
+            ann_path = self.root_dir / split_folder / line['fpath_segm']
             if os.path.exists(img_path) and os.path.exists(ann_path):
                 self.samples.append({'img': img_path, 'mask': ann_path})
             else:
