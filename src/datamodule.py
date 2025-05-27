@@ -73,7 +73,7 @@ class StreetHazardsDataModule(L.LightningDataModule):
 if __name__ == "__main__":
     from pathlib import Path
     data_module = StreetHazardsDataModule(
-        data_dir=Path('data/'),
+        root_dir=Path('data/'),
         batch_size=32,
         num_workers=0
     )
