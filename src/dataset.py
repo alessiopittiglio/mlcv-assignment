@@ -1,4 +1,3 @@
-import os
 import json
 import numpy as np
 import torch
@@ -53,7 +52,7 @@ class StreetHazardsDataset(Dataset):
             split_folder = split
             odgt_filename = f'{split}.odgt'
         
-        odgt_path = Path(self.root_dir) / split_folder / odgt_filename
+        odgt_path = self.root_dir / split_folder / odgt_filename
 
         try:
             with open(odgt_path, 'r') as f:
@@ -61,13 +60,14 @@ class StreetHazardsDataset(Dataset):
         except FileNotFoundError:
             raise FileNotFoundError(f"ODGT file not found: {odgt_path}")
         
-        for line in data:
-            img_path = self.root_dir / split_folder / line['fpath_img']
-            ann_path = self.root_dir / split_folder / line['fpath_segm']
-            if os.path.exists(img_path) and os.path.exists(ann_path):
-                self.samples.append({'img': img_path, 'mask': ann_path})
+        for sample in samples:
+            img_path = self.root_dir / split_folder / sample['fpath_img']
+            ann_path = self.root_dir / split_folder / sample['fpath_segm']
+
+            if img_path.exists() and ann_path.exists():
+                self.samples.append({'img': str(img_path), 'mask': str(ann_path)})
             else:
-                print(f"File not found for line: {line.strip()}")
+                print(f"File not found. Img: {img_path}, Mask: {ann_path}")
         
         if not self.samples:
             print(
