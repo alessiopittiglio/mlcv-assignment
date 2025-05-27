@@ -3,7 +3,14 @@ from torch.utils.data import DataLoader
 from dataset import StreetHazardsDataset
 
 class StreetHazardsDataModule(L.LightningDataModule):
-    def __init__(self, data_dir: str = "data/", batch_size: int = 32, num_workers: int = 4, train_transform=None, eval_transform=None):
+    def __init__(
+            self,
+            data_dir: str = "data/",
+            batch_size: int = 32,
+            num_workers: int = 4,
+            train_transform=None,
+            eval_transform=None
+        ):
         super().__init__()
         self.data_dir = data_dir
         self.batch_size = batch_size
