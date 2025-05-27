@@ -34,8 +34,8 @@ class StreetHazardsDataset(Dataset):
         14: CLASS_TO_ID['anomaly'],
     }
 
-    def __init__(self, root_dir, split='train', transform=None):
-        self.root_dir = root_dir
+    def __init__(self, root_dir: str, split: str = 'train', transform=None):
+        self.root_dir = Path(root_dir)
         self.split = split
         self.transform = transform
         self.samples = []
@@ -70,10 +70,10 @@ class StreetHazardsDataset(Dataset):
         
         self.num_classes = 13 if split == 'test' else 12
 
-    def __len__(self):
+    def __len__(self) -> int:
         return len(self.samples)
 
-    def __getitem__(self, idx):
+    def __getitem__(self, idx: int) -> tuple:
         sample = self.samples[idx]
         img_path = sample['img']
         mask_path = sample['mask']
