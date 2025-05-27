@@ -16,6 +16,7 @@ class StreetHazardsDataset(Dataset):
     ]
     CLASSES = KNOWN_CLASSES + ['anomaly']
     CLASS_TO_ID = {name: i for i, name in enumerate(CLASSES)}
+    ANOMALY_ID = CLASS_TO_ID['anomaly']
 
     RAW_TO_TARGET_MAPPING = {
         0: IGNORE_INDEX,
@@ -32,7 +33,6 @@ class StreetHazardsDataset(Dataset):
         11: CLASS_TO_ID['car'],
         12: CLASS_TO_ID['wall'],
         13: CLASS_TO_ID['traffic sign'],
-        14: CLASS_TO_ID['anomaly'],
     }
 
     def __init__(self, root_dir: str, split: str = 'train', transform=None):
@@ -71,8 +71,15 @@ class StreetHazardsDataset(Dataset):
                 f"Warning: No samples found in {split} split. "
                 "Check the dataset path and files."
             )
+
+        self.raw_to_target = self.RAW_TO_TARGET_MAPPING.copy()
         
-        self.num_classes = 13 if split == 'test' else 12
+        if self.split == 'train' or self.split == 'val':
+            self.raw_to_target[14] = IGNORE_INDEX
+            self.num_classes = len(self.KNOWN_CLASSES)
+        if self.split == 'test':
+            self.raw_to_target[14] = self.ANOMALY_ID
+            self.num_classes = len(self.CLASSES)
 
     def __len__(self) -> int:
         return len(self.samples)
