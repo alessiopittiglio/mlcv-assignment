@@ -5,6 +5,9 @@ import torchvision.models.segmentation as segmentation
 import lightning as L
 import torchmetrics
 
+IGNORE_INDEX = 255
+ANOMALY_ID = 12
+
 class BaseSemanticSegmentationModel(L.LightningModule):
     def __init__(
             self,
@@ -34,22 +37,32 @@ class BaseSemanticSegmentationModel(L.LightningModule):
             raise TypeError(f"No Conv2d layer found in classifier")
         
         if hasattr(self.model, 'classifier'):
-            self.model.classifier = replace_classifier(self.model.classifier, num_classes_known)
+            self.model.classifier = replace_classifier(
+                self.model.classifier, num_classes_known
+            )
 
         if use_aux_loss and hasattr(self.model, 'aux_classifier'):
-            self.model.aux_classifier = replace_classifier(self.model.aux_classifier, num_classes_known)
+            self.model.aux_classifier = replace_classifier(
+                self.model.aux_classifier, num_classes_known
+            )
         elif not hasattr(self.model, 'aux_classifier'):
             self.hparams.use_aux_loss = False
 
-        self.criterion = nn.CrossEntropyLoss()
-        miou_args = dict(task="multiclass", num_classes=num_classes_known, average='macro')
+        self.criterion = nn.CrossEntropyLoss(ignore_index=IGNORE_INDEX)
+        
+        miou_args = dict(
+            task="multiclass",
+            num_classes=num_classes_known,
+            average='macro',
+            ignore_index=IGNORE_INDEX,
+        )
         self.train_miou = torchmetrics.JaccardIndex(**miou_args)
         self.val_miou = torchmetrics.JaccardIndex(**miou_args) 
         self.test_miou_closed = torchmetrics.JaccardIndex(
             task="multiclass",
             average='macro',
             num_classes=num_classes_known+1, 
-            ignore_index=num_classes_known
+            ignore_index=ANOMALY_ID,
         )
 
     def _calculate_segmentation_loss(self, outputs, masks):
@@ -81,11 +94,20 @@ class BaseSemanticSegmentationModel(L.LightningModule):
         logits = outputs['out']
 
         loss = self._calculate_segmentation_loss(outputs, masks)
-        self.log('train_loss', loss, on_step=True, on_epoch=True, prog_bar=True, logger=True)
+        self.log(
+            'train_loss', loss, on_step=True, on_epoch=True, prog_bar=True, logger=True
+        )
 
         preds = torch.argmax(logits, dim=1)
         self.train_miou.update(preds, masks)
-        self.log('train_miou', self.train_miou, on_step=False, on_epoch=True, prog_bar=True, logger=True)
+        self.log(
+            'train_miou',
+            self.train_miou,
+            on_step=False,
+            on_epoch=True,
+            prog_bar=True,
+            logger=True,
+        )
 
         return loss
 
@@ -95,11 +117,25 @@ class BaseSemanticSegmentationModel(L.LightningModule):
         logits = outputs['out']
 
         loss = self._calculate_segmentation_loss(outputs, masks)
-        self.log('val_loss', loss, on_step=False, on_epoch=True, prog_bar=True, logger=True)
+        self.log(
+            'val_loss',
+            loss,
+            on_step=False,
+            on_epoch=True,
+            prog_bar=True,
+            logger=True
+        )
 
         preds = torch.argmax(logits, dim=1)
         self.val_miou.update(preds, masks)
-        self.log('val_miou', self.val_miou, on_step=False, on_epoch=True, prog_bar=True, logger=True)
+        self.log(
+            'val_miou',
+            self.val_miou,
+            on_step=False,
+            on_epoch=True,
+            prog_bar=True,
+            logger=True
+        )
 
     def test_step(self, batch, batch_idx):
         images, masks_gt = batch
@@ -108,7 +144,13 @@ class BaseSemanticSegmentationModel(L.LightningModule):
 
         preds_closed = torch.argmax(logits_known, dim=1)
         self.test_miou_closed.update(preds_closed, masks_gt)
-        self.log('test_miou_closed', self.test_miou_closed, on_step=False, on_epoch=True, logger=True)
+        self.log(
+            'test_miou_closed',
+            self.test_miou_closed,
+            on_step=False,
+            on_epoch=True,
+            logger=True,
+        )
 
     def configure_optimizers(self):
         optimizer = optim.AdamW(self.parameters(), lr=self.hparams.learning_rate)
