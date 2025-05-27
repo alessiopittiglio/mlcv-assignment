@@ -115,7 +115,9 @@ class StreetHazardsDataset(Dataset):
             )
         else:
             transformed_image = F_v2.to_image(image_pil)
-            transformed_image = F_v2.to_dtype(transformed_image, torch.float32, scale=True)
+            transformed_image = F_v2.to_dtype(
+                transformed_image, torch.float32, scale=True
+            )
             transformed_mask = torch.from_numpy(mask_target)
         
         if transformed_mask.dtype != torch.long:
