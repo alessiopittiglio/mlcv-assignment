@@ -5,6 +5,7 @@ from pathlib import Path
 from PIL import Image
 from torch.utils.data import Dataset
 from torchvision.tv_tensors import Mask
+from torchvision.transforms.v2 import functional as F_v2
 
 IGNORE_INDEX = 255
 
@@ -93,28 +94,38 @@ class StreetHazardsDataset(Dataset):
         mask_path = sample['mask']
         
         try:
-            image = Image.open(img_path).convert("RGB")
-            mask = Image.open(mask_path).convert('L')
-
-            mask_raw = np.array(mask)
-            mask_target = np.full_like(mask, IGNORE_INDEX)
-
-            unique_ids = np.unique(mask_raw)
-            for raw_id in unique_ids:
-                target_id = self.RAW_TO_TARGET_MAPPING.get(raw_id, IGNORE_INDEX)
-                mask_target[mask_raw == raw_id] = target_id
-
+            image_pil = Image.open(img_path).convert("RGB")
+            mask_pil = Image.open(mask_path).convert('L')
         except FileNotFoundError:
             print(f"File not found: {img_path} or {mask_path}")
             return None
 
+        mask_np = np.array(mask_pil)
+        mask_target = np.full_like(mask_np, IGNORE_INDEX)
+
+        for raw_id, target_id in self.raw_to_target.items():
+            mask_target[mask_np == raw_id] = target_id
+
+        mask_target_pil = Image.fromarray(mask_target)
+
         if self.transform:
-            image, mask = self.transform(image, Mask(mask_target))
+            transformed_image, transformed_mask = self.transform(
+                image_pil,
+                Mask(mask_target_pil)
+            )
+        else:
+            transformed_image = F_v2.to_image(image_pil)
+            transformed_image = F_v2.to_dtype(transformed_image, torch.float32, scale=True)
+            transformed_mask = torch.from_numpy(mask_target)
         
-        if isinstance(mask, torch.Tensor):
-            mask = mask.squeeze(0).long()
+        if transformed_mask.dtype != torch.long:
+            transformed_mask = transformed_mask.long()
         
-        return image, mask
+        if self.split == 'test':
+            mask_anomaly_gt = (transformed_mask == self.ANOMALY_ID).long()
+            return transformed_image, transformed_mask, mask_anomaly_gt
+        else:
+            return transformed_image, transformed_mask
 
 if __name__ == "__main__":
     from pathlib import Path
