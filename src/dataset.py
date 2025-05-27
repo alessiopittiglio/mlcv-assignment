@@ -106,12 +106,10 @@ class StreetHazardsDataset(Dataset):
         for raw_id, target_id in self.raw_to_target.items():
             mask_target[mask_np == raw_id] = target_id
 
-        mask_target_pil = Image.fromarray(mask_target)
-
         if self.transform:
             transformed_image, transformed_mask = self.transform(
                 image_pil,
-                Mask(mask_target_pil)
+                Mask(mask_target)
             )
         else:
             transformed_image = F_v2.to_image(image_pil)
