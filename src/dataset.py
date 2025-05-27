@@ -66,7 +66,10 @@ class StreetHazardsDataset(Dataset):
                 print(f"File not found for line: {line.strip()}")
         
         if not self.samples:
-            print(f"Warning: No samples found in {split} split. Check the dataset path and files.")
+            print(
+                f"Warning: No samples found in {split} split. "
+                "Check the dataset path and files."
+            )
         
         self.num_classes = 13 if split == 'test' else 12
 
