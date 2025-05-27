@@ -40,6 +40,11 @@ class StreetHazardsDataset(Dataset):
         self.transform = transform
         self.samples = []
 
+        if split not in ['train', 'val', 'test']:
+            raise ValueError(
+                f"Invalid split '{split}'. Expected one of 'train', 'val', or 'test'."
+            )
+
         if split == 'val':
             split_folder = 'train'
             odgt_filename = 'validation.odgt'
