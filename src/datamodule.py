@@ -5,14 +5,14 @@ from dataset import StreetHazardsDataset
 class StreetHazardsDataModule(L.LightningDataModule):
     def __init__(
             self,
-            data_dir: str = "data/",
+            root_dir: str = "data/",
             batch_size: int = 32,
             num_workers: int = 4,
             train_transform=None,
             eval_transform=None
         ):
         super().__init__()
-        self.data_dir = data_dir
+        self.root_dir = root_dir
         self.batch_size = batch_size
         self.num_workers = num_workers
         self.train_transform = train_transform
@@ -24,18 +24,18 @@ class StreetHazardsDataModule(L.LightningDataModule):
     def setup(self, stage: str = None):
         if stage == 'fit' or stage is None:
             self.train_dataset = StreetHazardsDataset(
-                root_dir=self.data_dir,
+                root_dir=self.root_dir,
                 split='train',
                 transform=self.train_transform
             )
             self.val_dataset = StreetHazardsDataset(
-                root_dir=self.data_dir,
+                root_dir=self.root_dir,
                 split='val',
                 transform=self.eval_transform
             )
         if stage == "test" or stage is None:
             self.test_dataset = StreetHazardsDataset(
-                root_dir=self.data_dir,
+                root_dir=self.root_dir,
                 split='test',
                 transform=self.eval_transform
             )
