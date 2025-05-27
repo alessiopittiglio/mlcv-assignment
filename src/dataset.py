@@ -4,7 +4,8 @@ import numpy as np
 import torch
 from PIL import Image
 from torch.utils.data import Dataset
-from torchvision import tv_tensors
+from torchvision.tv_tensors import Mask
+
 IGNORE_INDEX = 255
 
 class StreetHazardsDataset(Dataset):
@@ -87,11 +88,9 @@ class StreetHazardsDataset(Dataset):
         except FileNotFoundError:
             print(f"File not found: {img_path} or {mask_path}")
             return None
-        
-        mask = tv_tensors.Mask(mask_target)
 
         if self.transform:
-            image, mask = self.transform(image, mask)
+            image, mask = self.transform(image, Mask(mask_target))
         
         if isinstance(mask, torch.Tensor):
             mask = mask.squeeze(0).long()
