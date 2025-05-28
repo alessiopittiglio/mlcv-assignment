@@ -17,6 +17,8 @@ class BaseSemanticSegmentationModel(L.LightningModule):
             num_classes=12,
             learning_rate=1e-4,
             use_aux_loss=False,
+            optimizer_kwargs: dict = None,
+            scheduler_kwargs: dict = None,
             model_name='deeplabv3_resnet50',
             pretrained_weights='DEFAULT',
         ):
@@ -170,8 +172,11 @@ class BaseSemanticSegmentationModel(L.LightningModule):
         )
 
     def configure_optimizers(self):
-        optimizer = optim.AdamW(self.parameters(), lr=self.hparams.learning_rate)
-        scheduler = optim.lr_scheduler.ReduceLROnPlateau(optimizer, mode='min')
+        optimizer = optim.AdamW(self.parameters(), **self.hparams.optimizer_kwargs)
+        scheduler = optim.lr_scheduler.ReduceLROnPlateau(
+            optimizer,
+            **self.hparams.scheduler_kwargs,
+        )
 
         return {
             'optimizer': optimizer,
