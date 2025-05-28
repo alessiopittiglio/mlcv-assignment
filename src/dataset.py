@@ -121,11 +121,7 @@ class StreetHazardsDataset(Dataset):
         if transformed_mask.dtype != torch.long:
             transformed_mask = transformed_mask.long()
         
-        if self.split == 'test':
-            mask_anomaly_gt = (transformed_mask == self.ANOMALY_ID).long()
-            return transformed_image, transformed_mask, mask_anomaly_gt
-        else:
-            return transformed_image, transformed_mask
+        return transformed_image, transformed_mask
 
 if __name__ == "__main__":
     from pathlib import Path
