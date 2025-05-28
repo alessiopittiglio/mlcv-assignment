@@ -24,6 +24,7 @@ def main():
         cfg = yaml.safe_load(f)
 
     run = wandb.init(project="mlcv-assignment")
+    run_id = run.id
     logger = WandbLogger(experiment=run)
 
     L.seed_everything(cfg["seed"], workers=True)
@@ -48,6 +49,7 @@ def main():
     )
 
     save_dir = Path("checkpoints/")
+    save_dir /= run_id
     save_dir.mkdir(parents=True, exist_ok=True)
 
     model_checkpoint = ModelCheckpoint(
