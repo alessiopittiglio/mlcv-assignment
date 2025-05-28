@@ -157,7 +157,7 @@ class BaseSemanticSegmentationModel(L.LightningModule):
             logger=True
         )
 
-    def test_step(self, batch, batch_idx):
+    def test_step(self, batch: tuple, batch_idx: int):
         images, masks_gt = batch
         outputs = self(images)
         logits_known = outputs['out']
