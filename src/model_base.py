@@ -9,6 +9,9 @@ IGNORE_INDEX = 255
 ANOMALY_ID = 12
 
 class BaseSemanticSegmentationModel(L.LightningModule):
+    """
+    Base class for semantic segmentation models using PyTorch Lightning.
+    """
     def __init__(
             self,
             num_classes_known=12,
