@@ -40,7 +40,7 @@ class BaseSemanticSegmentationModel(L.LightningModule):
         )
         self.train_miou = torchmetrics.JaccardIndex(**miou_args)
         self.val_miou = torchmetrics.JaccardIndex(**miou_args)
-        
+
         self.test_miou_closed = torchmetrics.JaccardIndex(
             task="multiclass",
             average='macro',
@@ -84,7 +84,11 @@ class BaseSemanticSegmentationModel(L.LightningModule):
             stride=conv_layer.stride,
         )
 
-    def _calculate_segmentation_loss(self, outputs, masks):
+    def _calculate_segmentation_loss(
+            self,
+            outputs: dict,
+            masks: torch.Tensor
+        ) -> torch.Tensor:
         loss = self.criterion(outputs['out'], masks)
 
         if self.hparams.use_aux_loss and 'aux' in outputs:
