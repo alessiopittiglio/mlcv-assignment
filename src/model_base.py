@@ -39,7 +39,8 @@ class BaseSemanticSegmentationModel(L.LightningModule):
             ignore_index=IGNORE_INDEX,
         )
         self.train_miou = torchmetrics.JaccardIndex(**miou_args)
-        self.val_miou = torchmetrics.JaccardIndex(**miou_args) 
+        self.val_miou = torchmetrics.JaccardIndex(**miou_args)
+        
         self.test_miou_closed = torchmetrics.JaccardIndex(
             task="multiclass",
             average='macro',
