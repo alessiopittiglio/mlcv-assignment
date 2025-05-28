@@ -34,7 +34,7 @@ class BaseSemanticSegmentationModel(L.LightningModule):
         
         miou_args = dict(
             task="multiclass",
-            num_classes=num_classes,
+            num_classes=self.hparams.num_classes,
             average='macro',
             ignore_index=IGNORE_INDEX,
         )
@@ -43,7 +43,7 @@ class BaseSemanticSegmentationModel(L.LightningModule):
         self.test_miou_closed = torchmetrics.JaccardIndex(
             task="multiclass",
             average='macro',
-            num_classes=num_classes+1, 
+            num_classes=self.hparams.num_classes+1, 
             ignore_index=ANOMALY_ID,
         )
     
