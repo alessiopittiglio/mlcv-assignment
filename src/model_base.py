@@ -131,7 +131,7 @@ class BaseSemanticSegmentationModel(L.LightningModule):
 
         return loss
 
-    def validation_step(self, batch, batch_idx):
+    def validation_step(self, batch: tuple, batch_idx: int):
         images, masks = batch
         outputs = self(images)
         logits = outputs['out']
