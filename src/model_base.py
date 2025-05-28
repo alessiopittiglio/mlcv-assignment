@@ -104,10 +104,8 @@ class BaseSemanticSegmentationModel(L.LightningModule):
             loss += 0.4 * aux_loss
         return loss
 
-    def forward(self, x):
+    def forward(self, x: torch.Tensor):
         outputs = self.model(x)
-        if isinstance(outputs, torch.Tensor):
-            outputs = {'out': outputs}
         return outputs
 
     def training_step(self, batch, batch_idx):
