@@ -23,33 +23,11 @@ class BaseSemanticSegmentationModel(L.LightningModule):
         super().__init__()
         self.save_hyperparameters()
 
-        model_fn = getattr(segmentation, model_name, None)
-        self.model = model_fn(weights=pretrained_weights)
-
-        def replace_classifier(module, classes):
-            for i in range(len(module) - 1, -1, -1):
-                if isinstance(module[i], nn.Conv2d):
-                    conv = module[i]
-                    module[i] = nn.Conv2d(
-                        conv.in_channels, 
-                        classes, 
-                        kernel_size=conv.kernel_size, 
-                        stride=conv.stride
-                    )
-                    return module
-            raise TypeError(f"No Conv2d layer found in classifier")
-        
-        if hasattr(self.model, 'classifier'):
-            self.model.classifier = replace_classifier(
-                self.model.classifier, num_classes_known
-            )
-
-        if use_aux_loss and hasattr(self.model, 'aux_classifier'):
-            self.model.aux_classifier = replace_classifier(
-                self.model.aux_classifier, num_classes_known
-            )
-        elif not hasattr(self.model, 'aux_classifier'):
-            self.hparams.use_aux_loss = False
+        self.model = self._init_model(
+            self.hparams.model_name,
+            self.hparams.num_classes_known,
+            self.hparams.use_aux_loss,
+        )
 
         self.criterion = nn.CrossEntropyLoss(ignore_index=IGNORE_INDEX)
         
@@ -66,6 +44,42 @@ class BaseSemanticSegmentationModel(L.LightningModule):
             average='macro',
             num_classes=num_classes_known+1, 
             ignore_index=ANOMALY_ID,
+        )
+    
+    def _init_model(
+            self,
+            model_name: str,
+            num_classes: int,
+            use_aux_loss: bool
+        ) -> nn.Module:
+        if model_name == 'deeplabv3_resnet50':
+            weights = segmentation.DeepLabV3_ResNet50_Weights.DEFAULT
+            model = segmentation.deeplabv3_resnet50(weights=weights)
+        elif model_name == 'deeplabv3_resnet101':
+            weights = segmentation.DeepLabV3_ResNet101_Weights.DEFAULT
+            model = segmentation.deeplabv3_resnet101(weights=weights)
+        else:
+            raise ValueError(f"Unsupported model name: {model_name}")
+
+        model.classifier[-1] = self._replace_classifier_head(
+            model.classifier[-1], num_classes
+        )
+
+        if use_aux_loss:
+            model.aux_classifier[-1] = self._replace_classifier_head(
+                model.aux_classifier[-1],
+                num_classes
+            )
+        
+        return model
+    
+    @staticmethod
+    def _replace_classifier_head(conv_layer: nn.Conv2d, out_channels: int) -> nn.Conv2d:
+        return nn.Conv2d(
+            in_channels=conv_layer.in_channels,
+            out_channels=out_channels,
+            kernel_size=conv_layer.kernel_size,
+            stride=conv_layer.stride,
         )
 
     def _calculate_segmentation_loss(self, outputs, masks):
