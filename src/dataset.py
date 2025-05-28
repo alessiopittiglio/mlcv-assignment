@@ -101,22 +101,22 @@ class StreetHazardsDataset(Dataset):
             return None
 
         mask_np = np.array(mask_pil)
-        mask_target = np.full_like(mask_np, IGNORE_INDEX)
+        remapped_mask_np = np.full_like(mask_np, IGNORE_INDEX)
 
         for raw_id, target_id in self.raw_to_target.items():
-            mask_target[mask_np == raw_id] = target_id
+            remapped_mask_np[mask_np == raw_id] = target_id
 
         if self.transform:
             transformed_image, transformed_mask = self.transform(
                 image_pil,
-                Mask(mask_target)
+                Mask(remapped_mask_np)
             )
         else:
             transformed_image = F_v2.to_image(image_pil)
             transformed_image = F_v2.to_dtype(
                 transformed_image, torch.float32, scale=True
             )
-            transformed_mask = torch.from_numpy(mask_target)
+            transformed_mask = torch.from_numpy(remapped_mask_np)
         
         if transformed_mask.dtype != torch.long:
             transformed_mask = transformed_mask.long()
