@@ -100,7 +100,6 @@ class BaseSemanticSegmentationModel(L.LightningModule):
                     mode='bilinear', 
                     align_corners=False
                 )
-            
             aux_loss = self.criterion(aux_preds, masks)
             loss += 0.4 * aux_loss
         return loss
