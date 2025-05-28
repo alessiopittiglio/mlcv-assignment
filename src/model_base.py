@@ -14,7 +14,7 @@ class BaseSemanticSegmentationModel(L.LightningModule):
     """
     def __init__(
             self,
-            num_classes_known=12,
+            num_classes=12,
             learning_rate=1e-4,
             use_aux_loss=False,
             model_name='deeplabv3_resnet50',
@@ -25,7 +25,7 @@ class BaseSemanticSegmentationModel(L.LightningModule):
 
         self.model = self._init_model(
             self.hparams.model_name,
-            self.hparams.num_classes_known,
+            self.hparams.num_classes,
             self.hparams.use_aux_loss,
         )
 
@@ -33,7 +33,7 @@ class BaseSemanticSegmentationModel(L.LightningModule):
         
         miou_args = dict(
             task="multiclass",
-            num_classes=num_classes_known,
+            num_classes=num_classes,
             average='macro',
             ignore_index=IGNORE_INDEX,
         )
@@ -42,7 +42,7 @@ class BaseSemanticSegmentationModel(L.LightningModule):
         self.test_miou_closed = torchmetrics.JaccardIndex(
             task="multiclass",
             average='macro',
-            num_classes=num_classes_known+1, 
+            num_classes=num_classes+1, 
             ignore_index=ANOMALY_ID,
         )
     
