@@ -15,13 +15,11 @@ class BaseSemanticSegmentationModel(L.LightningModule):
     """
     def __init__(
             self,
-            num_classes=12,
-            learning_rate=1e-4,
-            use_aux_loss=False,
+            num_classes: int = 12,
+            model_name: str = 'deeplabv3_resnet50',
+            use_aux_loss: bool = True,
             optimizer_kwargs: dict = None,
             scheduler_kwargs: dict = None,
-            model_name='deeplabv3_resnet50',
-            pretrained_weights='DEFAULT',
         ):
         super().__init__()
         self.save_hyperparameters()
