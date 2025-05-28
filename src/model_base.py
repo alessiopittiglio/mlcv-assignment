@@ -109,17 +109,17 @@ class BaseSemanticSegmentationModel(L.LightningModule):
         return outputs
 
     def training_step(self, batch: tuple, batch_idx: int) -> torch.Tensor:
-        images, masks = batch
+        images, gt_known_masks = batch
         outputs = self(images)
         logits = outputs['out']
 
-        loss = self._calculate_segmentation_loss(outputs, masks)
+        loss = self._calculate_segmentation_loss(outputs, gt_known_masks)
         self.log(
             'train_loss', loss, on_step=True, on_epoch=True, prog_bar=True, logger=True
         )
 
         preds = torch.argmax(logits, dim=1)
-        self.train_miou.update(preds, masks)
+        self.train_miou.update(preds, gt_known_masks)
         self.log(
             'train_miou',
             self.train_miou,
@@ -132,11 +132,11 @@ class BaseSemanticSegmentationModel(L.LightningModule):
         return loss
 
     def validation_step(self, batch: tuple, batch_idx: int):
-        images, masks = batch
+        images, gt_known_masks = batch
         outputs = self(images)
         logits = outputs['out']
 
-        loss = self._calculate_segmentation_loss(outputs, masks)
+        loss = self._calculate_segmentation_loss(outputs, gt_known_masks)
         self.log(
             'val_loss',
             loss,
@@ -147,7 +147,7 @@ class BaseSemanticSegmentationModel(L.LightningModule):
         )
 
         preds = torch.argmax(logits, dim=1)
-        self.val_miou.update(preds, masks)
+        self.val_miou.update(preds, gt_known_masks)
         self.log(
             'val_miou',
             self.val_miou,
