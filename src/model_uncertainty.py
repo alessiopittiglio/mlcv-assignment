@@ -1,5 +1,6 @@
+import numpy as np
 import torch
-import torchmetrics
+from sklearn.metrics import average_precision_score
 from model_base import BaseSemanticSegmentationModel
 
 ANOMALY_ID = 12
@@ -23,7 +24,8 @@ class UncertaintyModel(BaseSemanticSegmentationModel):
         )
         self.save_hyperparameters()
 
-        self.test_aupr_anomaly = torchmetrics.AveragePrecision(task="binary")
+        self.all_pixel_anomaly_scores = []
+        self.all_pixel_anomaly_labels = []
 
     def _calculate_anomaly_scores(self, logits_known: torch.Tensor) -> torch.Tensor:
         if self.hparams.uncertainty_type == 'msp':
@@ -53,13 +55,16 @@ class UncertaintyModel(BaseSemanticSegmentationModel):
         gt_anomaly_masks = (gt_full_masks == ANOMALY_ID).long()
         anomaly_scores = self._calculate_anomaly_scores(logits_known)
 
-        self.test_aupr_anomaly.update(
-            anomaly_scores.flatten(), gt_anomaly_masks.flatten()
-        )
-        self.log(
-            'test_aupr_anomaly',
-            self.test_aupr_anomaly,
-            on_step=False,
-            on_epoch=True,
-            logger=True,
-        )
+        pixel_anomaly_scores = anomaly_scores.detach().cpu().numpy().ravel()
+        pixel_anomaly_labels = gt_anomaly_masks.detach().cpu().numpy().ravel()
+        
+        self.all_pixel_anomaly_scores.append(pixel_anomaly_scores)
+        self.all_pixel_anomaly_labels.append(pixel_anomaly_labels)
+
+def on_test_epoch_end(self):
+    all_scores = np.concatenate(self.all_pixel_anomaly_scores)
+    all_labels = np.concatenate(self.all_pixel_anomaly_labels)
+
+    aupr = average_precision_score(all_labels, all_scores)
+
+    self.log('test/aupr_anomaly', aupr, prog_bar=True)
