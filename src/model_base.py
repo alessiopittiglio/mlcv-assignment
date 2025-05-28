@@ -187,6 +187,7 @@ class BaseSemanticSegmentationModel(L.LightningModule):
             'lr_scheduler': {
                 'scheduler': scheduler,
                 'monitor': 'val_loss',
+                'frequency': 1,
             },
         }
     
