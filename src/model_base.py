@@ -44,8 +44,8 @@ class BaseSemanticSegmentationModel(L.LightningModule):
         self.test_miou_closed = torchmetrics.JaccardIndex(
             task="multiclass",
             average='macro',
-            num_classes=self.hparams.num_classes+1, 
-            ignore_index=ANOMALY_ID,
+            num_classes=self.hparams.num_classes,
+            ignore_index=IGNORE_INDEX,
         )
     
     def _init_model(
@@ -158,12 +158,15 @@ class BaseSemanticSegmentationModel(L.LightningModule):
         )
 
     def test_step(self, batch: tuple, batch_idx: int):
-        images, masks_gt = batch
+        images, gt_masks_with_anomalies = batch
         outputs = self(images)
         logits_known = outputs['out']
 
+        gt_masks = gt_masks_with_anomalies.clone()
+        gt_masks[gt_masks_with_anomalies == ANOMALY_ID] = IGNORE_INDEX
+
         preds_closed = torch.argmax(logits_known, dim=1)
-        self.test_miou_closed.update(preds_closed, masks_gt)
+        self.test_miou_closed.update(preds_closed, gt_masks)
         self.log(
             'test_miou_closed',
             self.test_miou_closed,
