@@ -1,5 +1,6 @@
 import torch
 import torch.nn as nn
+import torch.nn.functional as F
 import torch.optim as optim
 import torchvision.models.segmentation as segmentation
 import lightning as L
@@ -90,7 +91,7 @@ class BaseSemanticSegmentationModel(L.LightningModule):
         if self.hparams.use_aux_loss and 'aux' in outputs:
             aux_preds = outputs['aux']
             if aux_preds.shape[-2:] != masks.shape[-2:]:
-                aux_preds = nn.functional.interpolate(
+                aux_preds = F.interpolate(
                     aux_preds, 
                     size=masks.shape[-2:], 
                     mode='bilinear', 
