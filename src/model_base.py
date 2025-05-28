@@ -108,7 +108,7 @@ class BaseSemanticSegmentationModel(L.LightningModule):
         outputs = self.model(x)
         return outputs
 
-    def training_step(self, batch, batch_idx):
+    def training_step(self, batch: tuple, batch_idx: int) -> torch.Tensor:
         images, masks = batch
         outputs = self(images)
         logits = outputs['out']
