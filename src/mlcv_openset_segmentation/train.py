@@ -12,9 +12,9 @@ from lightning.pytorch.callbacks import (
 )
 from lightning.pytorch.loggers import WandbLogger
 
-from .datamodule import StreetHazardsDataModule
-from .model_uncertainty import UncertaintyModel
-from .transforms import get_transforms
+from mlcv_openset_segmentation.datamodule import StreetHazardsDataModule
+from mlcv_openset_segmentation.model_uncertainty import UncertaintyModel
+from mlcv_openset_segmentation.transforms import get_transforms
 
 torch.set_float32_matmul_precision("high")
 
