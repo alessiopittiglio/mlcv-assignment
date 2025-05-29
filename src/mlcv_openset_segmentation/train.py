@@ -72,15 +72,23 @@ def main():
     save_dir /= run_id
     save_dir.mkdir(parents=True, exist_ok=True)
 
+    monitor_cfg = cfg.get("monitor", {})
+    monitor_metric = monitor_cfg.get("metric", "val_loss")
+    monitor_mode = monitor_cfg.get("mode", "min")
+
     model_checkpoint = ModelCheckpoint(
         dirpath=save_dir,
         filename="{epoch:02d}-{val_loss:.2f}",
         save_top_k=1,
-        monitor="val_loss",
-        mode="min",
+        monitor=monitor_metric,
+        mode=monitor_mode,
     )
 
-    early_stopping = EarlyStopping(monitor="val_loss", patience=5, mode="min")
+    early_stopping = EarlyStopping(
+        monitor=monitor_metric,
+        patience=5,
+        mode=monitor_mode,
+    )
 
     lr_monitor = LearningRateMonitor(logging_interval='step')
 
