@@ -1,7 +1,7 @@
 import numpy as np
 import torch
 from sklearn.metrics import average_precision_score
-from model_base import BaseSemanticSegmentationModel
+from .model_base import BaseSemanticSegmentationModel
 
 ANOMALY_ID = 12
 
