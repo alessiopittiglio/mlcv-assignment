@@ -1,3 +1,4 @@
+import argparse
 import logging
 from pathlib import Path
 
@@ -20,8 +21,26 @@ torch.set_float32_matmul_precision("high")
 logger = logging.getLogger(__name__)
 logging.basicConfig(level=logging.INFO)
 
+def parse_args():
+    parser = argparse.ArgumentParser(
+        description="Train a model for street hazard detection."
+    )
+    parser.add_argument(
+        "--config",
+        type=str,
+        required=True,
+        help="Path to configuration YAML file",
+    )
+    return parser.parse_args()
+
 def main():
-    with open("configs/config.yaml", "r") as f:
+    args = parse_args()
+
+    config_path = Path(args.config)
+    if not config_path.exists():
+        raise FileNotFoundError(f"Configuration file {config_path} does not exist.")
+
+    with open(config_path, "r") as f:
         cfg = yaml.safe_load(f)
 
     run = wandb.init(project="mlcv-assignment")
