@@ -1,6 +1,6 @@
 import lightning as L
 from torch.utils.data import DataLoader
-from dataset import StreetHazardsDataset
+from .dataset import StreetHazardsDataset
 
 class StreetHazardsDataModule(L.LightningDataModule):
     def __init__(
