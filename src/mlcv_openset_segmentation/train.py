@@ -1,14 +1,13 @@
-import yaml
-from pathlib import Path
 import logging
+from pathlib import Path
 
-import lightning as L
 import torch
 import wandb
+import yaml
 
+import lightning as L
 from lightning.pytorch.callbacks import ModelCheckpoint, EarlyStopping
 from lightning.pytorch.loggers import WandbLogger
-from torchvision.transforms import v2
 
 from .datamodule import StreetHazardsDataModule
 from .model_uncertainty import UncertaintyModel
