@@ -6,7 +6,9 @@ import wandb
 import yaml
 
 import lightning as L
-from lightning.pytorch.callbacks import ModelCheckpoint, EarlyStopping
+from lightning.pytorch.callbacks import (
+    ModelCheckpoint,EarlyStopping, LearningRateMonitor
+)
 from lightning.pytorch.loggers import WandbLogger
 
 from .datamodule import StreetHazardsDataModule
@@ -61,9 +63,11 @@ def main():
 
     early_stopping = EarlyStopping(monitor="val_loss", patience=5, mode="min")
 
+    lr_monitor = LearningRateMonitor(logging_interval='step')
+
     trainer = L.Trainer(
         logger=logger,
-        callbacks=[model_checkpoint, early_stopping],
+        callbacks=[model_checkpoint, early_stopping, lr_monitor],
         **cfg["trainer"],
     )
 
