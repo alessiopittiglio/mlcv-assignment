@@ -10,9 +10,9 @@ from lightning.pytorch.callbacks import ModelCheckpoint, EarlyStopping
 from lightning.pytorch.loggers import WandbLogger
 from torchvision.transforms import v2
 
-from datamodule import StreetHazardsDataModule
-from model_uncertainty import UncertaintyModel
-from transforms import get_transforms
+from .datamodule import StreetHazardsDataModule
+from .model_uncertainty import UncertaintyModel
+from .transforms import get_transforms
 
 torch.set_float32_matmul_precision("high")
 
