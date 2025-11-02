@@ -45,7 +45,7 @@ def main():
 
     run = wandb.init(project="mlcv-assignment")
     run_id = run.id
-    logger = WandbLogger(experiment=run)
+    logger = WandbLogger(experiment=run, config=cfg)
 
     L.seed_everything(cfg["seed"], workers=True)
 
