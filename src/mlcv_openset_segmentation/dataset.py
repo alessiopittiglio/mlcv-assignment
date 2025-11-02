@@ -11,8 +11,8 @@ IGNORE_INDEX = 255
 
 class StreetHazardsDataset(Dataset):
     KNOWN_CLASSES = [
-        'building', 'fence', 'other', 'pedestrian', 'pole', 'road line',
-        'road', 'sidewalk', 'vegetation', 'car', 'wall', 'traffic sign'
+        'unlabeled', 'building', 'fence', 'other', 'pedestrian', 'pole',
+        'road line', 'road', 'sidewalk', 'vegetation', 'car', 'wall', 'traffic sign'
     ]
     CLASSES = KNOWN_CLASSES + ['anomaly']
     CLASS_TO_ID = {name: i for i, name in enumerate(CLASSES)}
@@ -20,7 +20,7 @@ class StreetHazardsDataset(Dataset):
 
     RAW_TO_TARGET_MAPPING = {
         0: IGNORE_INDEX,
-        1: IGNORE_INDEX,
+        1: CLASS_TO_ID['unlabeled'],
         2: CLASS_TO_ID['building'],
         3: CLASS_TO_ID['fence'],
         4: CLASS_TO_ID['other'],
