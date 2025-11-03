@@ -8,7 +8,9 @@ import yaml
 
 import lightning as L
 from lightning.pytorch.callbacks import (
-    ModelCheckpoint,EarlyStopping, LearningRateMonitor
+    ModelCheckpoint,
+    EarlyStopping,
+    LearningRateMonitor,
 )
 from lightning.pytorch.loggers import WandbLogger
 
@@ -21,6 +23,7 @@ torch.set_float32_matmul_precision("high")
 logger = logging.getLogger(__name__)
 logging.basicConfig(level=logging.INFO)
 
+
 def parse_args():
     parser = argparse.ArgumentParser(
         description="Train a model for street hazard detection."
@@ -32,6 +35,7 @@ def parse_args():
         help="Path to configuration YAML file",
     )
     return parser.parse_args()
+
 
 def main():
     args = parse_args()
@@ -90,7 +94,7 @@ def main():
         mode=monitor_mode,
     )
 
-    lr_monitor = LearningRateMonitor(logging_interval='step')
+    lr_monitor = LearningRateMonitor(logging_interval="step")
 
     trainer = L.Trainer(
         logger=logger,
@@ -102,6 +106,7 @@ def main():
     trainer.test(model, datamodule=data_module, ckpt_path="best")
 
     wandb.finish()
+
 
 if __name__ == "__main__":
     main()
