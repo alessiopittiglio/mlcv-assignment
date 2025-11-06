@@ -3,12 +3,13 @@ import torch
 from sklearn.metrics import average_precision_score
 from .model_base import BaseSemanticSegmentationModel
 
-ANOMALY_ID = 12
+ANOMALY_ID = 13
+
 
 class UncertaintyModel(BaseSemanticSegmentationModel):
     def __init__(
             self,
-            num_classes: int = 12,
+            num_classes: int = 13,
             model_name: str = 'deeplabv3_resnet50',
             use_aux_loss: bool = True,
             optimizer_kwargs: dict = None,
