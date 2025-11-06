@@ -1,6 +1,9 @@
+from pathlib import Path
+
 import numpy as np
 import torch
 from sklearn.metrics import average_precision_score
+
 from .model_base import BaseSemanticSegmentationModel
 
 ANOMALY_ID = 13
@@ -25,47 +28,44 @@ class UncertaintyModel(BaseSemanticSegmentationModel):
         )
         self.save_hyperparameters()
 
-        self.all_pixel_anomaly_scores = []
-        self.all_pixel_anomaly_labels = []
+        self.pixel_anomaly_scores = []
+        self.pixel_anomaly_labels = []
 
-    def _calculate_anomaly_scores(self, logits_known: torch.Tensor) -> torch.Tensor:
-        if self.hparams.uncertainty_type == "msp":
-            softmax_probs = torch.softmax(logits_known, dim=1)
-            max_probs, _ = torch.max(softmax_probs, dim=1)
-            anomaly_scores = 1.0 - max_probs
-        elif self.hparams.uncertainty_type == "max_logit":
-            max_logits, _ = torch.max(logits_known, dim=1)
-            anomaly_scores = -max_logits
-        elif self.hparams.uncertainty_type == "entropy":
-            softmax_probs = torch.softmax(logits_known, dim=1)
-            entropy = -torch.sum(softmax_probs * torch.log(softmax_probs + 1e-9), dim=1)
-            anomaly_scores = entropy
-        else:
-            raise NotImplementedError(
-                f"Method {self.hparams.uncertainty_type} not implemented"
-            )
-        return anomaly_scores
+    def _compute_anomaly_scores(self, logits: torch.Tensor) -> torch.Tensor:
+        utype = self.hparams.uncertainty_type
+
+        if utype == "msp":
+            probs = torch.softmax(logits, dim=1)
+            max_probs, _ = probs.max(dim=1)
+            return 1.0 - max_probs
+
+        if utype == "max_logit":
+            max_logits, _ = logits.max(dim=1)
+            return -max_logits
+
+        if utype == "entropy":
+            probs = torch.softmax(logits, dim=1)
+            entropy = -(probs * torch.log(probs + 1e-9)).sum(dim=1)
+            return entropy
+
+        raise NotImplementedError(f"Unknown uncertainty type: '{utype}'")
 
     def test_step(self, batch, batch_idx):
         super().test_step(batch, batch_idx)
 
-        images, gt_full_masks = batch
+        images, gt_masks = batch
         outputs = self(images)
-        logits_known = outputs["out"]
+        logits = outputs["out"]
 
-        gt_anomaly_masks = (gt_full_masks == ANOMALY_ID).long()
-        anomaly_scores = self._calculate_anomaly_scores(logits_known)
+        anomaly_mask = (gt_masks == ANOMALY_ID).long()
+        anomaly_scores = self._compute_anomaly_scores(logits)
 
-        pixel_anomaly_scores = anomaly_scores.detach().cpu().numpy().ravel()
-        pixel_anomaly_labels = gt_anomaly_masks.detach().cpu().numpy().ravel()
-
-        self.all_pixel_anomaly_scores.append(pixel_anomaly_scores)
-        self.all_pixel_anomaly_labels.append(pixel_anomaly_labels)
+        self.pixel_anomaly_scores.append(anomaly_scores.detach().cpu().numpy().ravel())
+        self.pixel_anomaly_labels.append(anomaly_mask.detach().cpu().numpy().ravel())
 
     def on_test_epoch_end(self):
-        all_scores = np.concatenate(self.all_pixel_anomaly_scores)
-        all_labels = np.concatenate(self.all_pixel_anomaly_labels)
+        all_scores = np.concatenate(self.pixel_anomaly_scores)
+        all_labels = np.concatenate(self.pixel_anomaly_labels)
 
         aupr = average_precision_score(all_labels, all_scores)
-
         self.log("test_aupr_anomaly", aupr, prog_bar=True, logger=True)
