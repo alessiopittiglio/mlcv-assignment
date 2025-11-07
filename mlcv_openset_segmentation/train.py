@@ -16,6 +16,7 @@ from lightning.pytorch.loggers import WandbLogger
 
 from mlcv_openset_segmentation.datamodule import StreetHazardsDataModule
 from mlcv_openset_segmentation.model_uncertainty import UncertaintyModel
+from mlcv_openset_segmentation.model_metric import MetricLearningModel
 from mlcv_openset_segmentation.transforms import get_transforms
 
 torch.set_float32_matmul_precision("high")
@@ -35,6 +36,34 @@ def parse_args():
         help="Path to configuration YAML file",
     )
     return parser.parse_args()
+
+
+def build_model(cfg):
+    model_type = cfg["model"].get("type", "uncertainty").lower()
+
+    if model_type == "uncertainty":
+        model = UncertaintyModel(
+            num_classes=cfg["data"]["num_classes"],
+            model_name=cfg["model"]["model_name"],
+            use_aux_loss=cfg["model"]["use_aux_loss"],
+            uncertainty_type=cfg["model"]["uncertainty_type"],
+            optimizer_kwargs=cfg["optimizer"],
+            scheduler_kwargs=cfg["scheduler"],
+        )
+
+    elif model_type == "metric":
+        model = MetricLearningModel(
+            num_classes=cfg["data"]["num_classes"],
+            model_name=cfg["model"]["model_name"],
+            use_aux_loss=cfg["model"]["use_aux_loss"],
+            optimizer_kwargs=cfg["optimizer"],
+            scheduler_kwargs=cfg["scheduler"],
+        )
+
+    else:
+        raise ValueError(f"Unknown model type '{model_type}'.")
+
+    return model
 
 
 def main():
@@ -63,14 +92,7 @@ def main():
         eval_transform=eval_transform,
     )
 
-    model = UncertaintyModel(
-        num_classes=cfg["data"]["num_classes"],
-        model_name=cfg["model"]["model_name"],
-        use_aux_loss=cfg["model"]["use_aux_loss"],
-        uncertainty_type=cfg["model"]["uncertainty_type"],
-        optimizer_kwargs=cfg["optimizer"],
-        scheduler_kwargs=cfg["scheduler"],
-    )
+    model = build_model(cfg)
 
     save_dir = Path("checkpoints/")
     save_dir /= run_id
@@ -82,7 +104,7 @@ def main():
 
     model_checkpoint = ModelCheckpoint(
         dirpath=save_dir,
-        filename="{epoch:02d}-{val_loss:.2f}",
+        filename=f"{{epoch:02d}}-{{{monitor_metric}:.2f}}",
         save_top_k=1,
         monitor=monitor_metric,
         mode=monitor_mode,
