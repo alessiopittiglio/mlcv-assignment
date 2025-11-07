@@ -12,9 +12,10 @@ data:
   num_classes: 13
 
 model:
+  type: uncertainty
   model_name: deeplabv3_resnet50
   use_aux_loss: true
-  uncertainty_type: max_logit
+  uncertainty_type: sml
 
 optimizer:
   lr: 0.0001
