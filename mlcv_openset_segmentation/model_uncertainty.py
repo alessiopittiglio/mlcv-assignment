@@ -4,9 +4,7 @@ import numpy as np
 import torch
 from sklearn.metrics import average_precision_score
 
-from .model_base import BaseSemanticSegmentationModel
-
-ANOMALY_ID = 13
+from .model_base import BaseSemanticSegmentationModel, IGNORE_INDEX, ANOMALY_ID
 
 
 class UncertaintyModel(BaseSemanticSegmentationModel):
