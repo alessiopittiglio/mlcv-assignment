@@ -65,13 +65,24 @@ class UncertaintyModel(BaseSemanticSegmentationModel):
         raise NotImplementedError(f"Unknown uncertainty type: '{utype}'")
 
     def test_step(self, batch, batch_idx):
-        super().test_step(batch, batch_idx)
-
-        images, gt_masks = batch
+        images, gt_masks_with_anomalies = batch
         outputs = self(images)
         logits = outputs["out"]
 
-        anomaly_mask = (gt_masks == ANOMALY_ID).long()
+        gt_closed = gt_masks_with_anomalies.clone()
+        gt_closed[gt_masks_with_anomalies == ANOMALY_ID] = IGNORE_INDEX
+
+        preds_closed = torch.argmax(logits, dim=1)
+        self.test_miou_closed.update(preds_closed, gt_closed)
+        self.log(
+            "test_miou_closed",
+            self.test_miou_closed,
+            on_step=False,
+            on_epoch=True,
+            logger=True,
+        )
+
+        anomaly_mask = (gt_masks_with_anomalies == ANOMALY_ID).long()
         anomaly_scores = self._compute_anomaly_scores(logits)
 
         self.pixel_anomaly_scores.append(anomaly_scores.detach().cpu().numpy().ravel())
