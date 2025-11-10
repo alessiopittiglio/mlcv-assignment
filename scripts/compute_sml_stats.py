@@ -82,6 +82,8 @@ def compute_statistics(model, dataloader, num_classes, device):
     variances = m2s / counts.clamp_min(1)
     variances.clamp_(min=0.0)
     stds = torch.sqrt(variances)
+    means = means.float()
+    stds = stds.float().clamp_min(1e-6)
 
     return {"means": means, "stds": stds}
 
