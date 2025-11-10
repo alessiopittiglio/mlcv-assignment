@@ -15,7 +15,7 @@ class UncertaintyModel(BaseSemanticSegmentationModel):
         use_aux_loss: bool = True,
         optimizer_kwargs: dict = None,
         scheduler_kwargs: dict = None,
-        uncertainty_type="msp",
+        uncertainty_type: str = "msp",
         sml_stats_path: str = "artifacts/sml_stats.pt",
     ):
         super().__init__(
