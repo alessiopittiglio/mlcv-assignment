@@ -34,9 +34,13 @@ class UncertaintyModel(BaseSemanticSegmentationModel):
             stats_path = Path(sml_stats_path)
             if not stats_path.exists():
                 raise FileNotFoundError(f"SML stats file not found at {stats_path}")
-            stats = torch.load(sml_stats_path)
-            self.register_buffer("sml_means", stats["means"])
-            self.register_buffer("sml_stds", stats["stds"])
+            stats = torch.load(sml_stats_path, map_location="cpu")
+
+            means = stats["means"].float().view(-1)
+            stds = stats["stds"].float().view(-1).clamp_min(1e-6)
+
+            self.register_buffer("sml_means", means)
+            self.register_buffer("sml_stds", stds)
 
     def _compute_anomaly_scores(self, logits: torch.Tensor) -> torch.Tensor:
         utype = self.hparams.uncertainty_type
@@ -59,7 +63,7 @@ class UncertaintyModel(BaseSemanticSegmentationModel):
             max_logits, preds = logits.max(dim=1)
             means = self.sml_means[preds]
             stds = self.sml_stds[preds]
-            sml_scores = (max_logits - means) / (stds + 1e-8)
+            sml_scores = (max_logits - means) / stds
             return -sml_scores
 
         raise NotImplementedError(f"Unknown uncertainty type: '{utype}'")
