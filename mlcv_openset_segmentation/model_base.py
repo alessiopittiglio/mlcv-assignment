@@ -9,18 +9,20 @@ import torchmetrics
 IGNORE_INDEX = 255
 ANOMALY_ID = 13
 
+
 class BaseSemanticSegmentationModel(L.LightningModule):
     """
     Base class for semantic segmentation models using PyTorch Lightning.
     """
+
     def __init__(
-            self,
-            num_classes: int = 13,
-            model_name: str = 'deeplabv3_resnet50',
-            use_aux_loss: bool = True,
-            optimizer_kwargs: dict = None,
-            scheduler_kwargs: dict = None,
-        ):
+        self,
+        num_classes: int = 13,
+        model_name: str = "deeplabv3_resnet50",
+        use_aux_loss: bool = True,
+        optimizer_kwargs: dict = None,
+        scheduler_kwargs: dict = None,
+    ):
         super().__init__()
         self.save_hyperparameters()
 
@@ -31,11 +33,11 @@ class BaseSemanticSegmentationModel(L.LightningModule):
         )
 
         self.criterion = nn.CrossEntropyLoss(ignore_index=IGNORE_INDEX)
-        
+
         miou_args = dict(
             task="multiclass",
             num_classes=self.hparams.num_classes,
-            average='macro',
+            average="macro",
             ignore_index=IGNORE_INDEX,
         )
         self.train_miou = torchmetrics.JaccardIndex(**miou_args)
@@ -43,21 +45,18 @@ class BaseSemanticSegmentationModel(L.LightningModule):
 
         self.test_miou_closed = torchmetrics.JaccardIndex(
             task="multiclass",
-            average='macro',
+            average="macro",
             num_classes=self.hparams.num_classes,
             ignore_index=IGNORE_INDEX,
         )
-    
+
     def _init_model(
-            self,
-            model_name: str,
-            num_classes: int,
-            use_aux_loss: bool
-        ) -> nn.Module:
-        if model_name == 'deeplabv3_resnet50':
+        self, model_name: str, num_classes: int, use_aux_loss: bool
+    ) -> nn.Module:
+        if model_name == "deeplabv3_resnet50":
             weights = segmentation.DeepLabV3_ResNet50_Weights.DEFAULT
             model = segmentation.deeplabv3_resnet50(weights=weights)
-        elif model_name == 'deeplabv3_resnet101':
+        elif model_name == "deeplabv3_resnet101":
             weights = segmentation.DeepLabV3_ResNet101_Weights.DEFAULT
             model = segmentation.deeplabv3_resnet101(weights=weights)
         else:
@@ -69,12 +68,11 @@ class BaseSemanticSegmentationModel(L.LightningModule):
 
         if use_aux_loss:
             model.aux_classifier[-1] = self._replace_classifier_head(
-                model.aux_classifier[-1],
-                num_classes
+                model.aux_classifier[-1], num_classes
             )
-        
+
         return model
-    
+
     @staticmethod
     def _replace_classifier_head(conv_layer: nn.Conv2d, out_channels: int) -> nn.Conv2d:
         return nn.Conv2d(
@@ -85,20 +83,18 @@ class BaseSemanticSegmentationModel(L.LightningModule):
         )
 
     def _calculate_segmentation_loss(
-            self,
-            outputs: dict,
-            masks: torch.Tensor
-        ) -> torch.Tensor:
-        loss = self.criterion(outputs['out'], masks)
+        self, outputs: dict, masks: torch.Tensor
+    ) -> torch.Tensor:
+        loss = self.criterion(outputs["out"], masks)
 
-        if self.hparams.use_aux_loss and 'aux' in outputs:
-            aux_preds = outputs['aux']
+        if self.hparams.use_aux_loss and "aux" in outputs:
+            aux_preds = outputs["aux"]
             if aux_preds.shape[-2:] != masks.shape[-2:]:
                 aux_preds = F.interpolate(
-                    aux_preds, 
-                    size=masks.shape[-2:], 
-                    mode='bilinear', 
-                    align_corners=False
+                    aux_preds,
+                    size=masks.shape[-2:],
+                    mode="bilinear",
+                    align_corners=False,
                 )
             aux_loss = self.criterion(aux_preds, masks)
             loss += 0.4 * aux_loss
@@ -111,17 +107,17 @@ class BaseSemanticSegmentationModel(L.LightningModule):
     def training_step(self, batch: tuple, batch_idx: int) -> torch.Tensor:
         images, gt_known_masks = batch
         outputs = self(images)
-        logits = outputs['out']
+        logits = outputs["out"]
 
         loss = self._calculate_segmentation_loss(outputs, gt_known_masks)
         self.log(
-            'train_loss', loss, on_step=True, on_epoch=True, prog_bar=True, logger=True
+            "train_loss", loss, on_step=True, on_epoch=True, prog_bar=True, logger=True
         )
 
         preds = torch.argmax(logits, dim=1)
         self.train_miou.update(preds, gt_known_masks)
         self.log(
-            'train_miou',
+            "train_miou",
             self.train_miou,
             on_step=False,
             on_epoch=True,
@@ -134,33 +130,28 @@ class BaseSemanticSegmentationModel(L.LightningModule):
     def validation_step(self, batch: tuple, batch_idx: int):
         images, gt_known_masks = batch
         outputs = self(images)
-        logits = outputs['out']
+        logits = outputs["out"]
 
         loss = self._calculate_segmentation_loss(outputs, gt_known_masks)
         self.log(
-            'val_loss',
-            loss,
-            on_step=False,
-            on_epoch=True,
-            prog_bar=True,
-            logger=True
+            "val_loss", loss, on_step=False, on_epoch=True, prog_bar=True, logger=True
         )
 
         preds = torch.argmax(logits, dim=1)
         self.val_miou.update(preds, gt_known_masks)
         self.log(
-            'val_miou',
+            "val_miou",
             self.val_miou,
             on_step=False,
             on_epoch=True,
             prog_bar=True,
-            logger=True
+            logger=True,
         )
 
     def test_step(self, batch: tuple, batch_idx: int):
         images, gt_masks_with_anomalies = batch
         outputs = self(images)
-        logits_known = outputs['out']
+        logits_known = outputs["out"]
 
         gt_masks = gt_masks_with_anomalies.clone()
         gt_masks[gt_masks_with_anomalies == ANOMALY_ID] = IGNORE_INDEX
@@ -168,7 +159,7 @@ class BaseSemanticSegmentationModel(L.LightningModule):
         preds_closed = torch.argmax(logits_known, dim=1)
         self.test_miou_closed.update(preds_closed, gt_masks)
         self.log(
-            'test_miou_closed',
+            "test_miou_closed",
             self.test_miou_closed,
             on_step=False,
             on_epoch=True,
@@ -183,17 +174,18 @@ class BaseSemanticSegmentationModel(L.LightningModule):
         )
 
         return {
-            'optimizer': optimizer,
-            'lr_scheduler': {
-                'scheduler': scheduler,
-                'monitor': 'val_miou',
-                'frequency': 1,
+            "optimizer": optimizer,
+            "lr_scheduler": {
+                "scheduler": scheduler,
+                "monitor": "val_miou",
+                "frequency": 1,
             },
         }
-    
+
+
 if __name__ == "__main__":
     model = BaseSemanticSegmentationModel(
-        model_name='deeplabv3_resnet50',
+        model_name="deeplabv3_resnet50",
         use_aux_loss=True,
     )
     print(model)
