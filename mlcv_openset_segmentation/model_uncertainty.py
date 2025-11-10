@@ -89,8 +89,13 @@ class UncertaintyModel(BaseSemanticSegmentationModel):
         self.pixel_anomaly_labels.append(anomaly_mask.detach().cpu().numpy().ravel())
 
     def on_test_epoch_end(self):
+        if not self.pixel_anomaly_scores:
+            return
         all_scores = np.concatenate(self.pixel_anomaly_scores)
         all_labels = np.concatenate(self.pixel_anomaly_labels)
 
         aupr = average_precision_score(all_labels, all_scores)
         self.log("test_aupr_anomaly", aupr, prog_bar=True, logger=True)
+
+        self.pixel_anomaly_scores.clear()
+        self.pixel_anomaly_labels.clear()
