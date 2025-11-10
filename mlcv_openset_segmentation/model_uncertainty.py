@@ -42,6 +42,7 @@ class UncertaintyModel(BaseSemanticSegmentationModel):
             self.register_buffer("sml_means", means)
             self.register_buffer("sml_stds", stds)
 
+    @torch.no_grad()
     def _compute_anomaly_scores(self, logits: torch.Tensor) -> torch.Tensor:
         utype = self.hparams.uncertainty_type
 
@@ -86,11 +87,13 @@ class UncertaintyModel(BaseSemanticSegmentationModel):
             logger=True,
         )
 
-        anomaly_mask = (gt_masks_with_anomalies == ANOMALY_ID).long()
+        anomaly_mask = gt_masks_with_anomalies == ANOMALY_ID
         anomaly_scores = self._compute_anomaly_scores(logits)
 
-        self.pixel_anomaly_scores.append(anomaly_scores.detach().cpu().numpy().ravel())
-        self.pixel_anomaly_labels.append(anomaly_mask.detach().cpu().numpy().ravel())
+        self.pixel_anomaly_scores.append(anomaly_scores.cpu().float().numpy().ravel())
+        self.pixel_anomaly_labels.append(
+            anomaly_mask.cpu().numpy().astype(np.uint8).ravel()
+        )
 
     def on_test_epoch_end(self):
         if not self.pixel_anomaly_scores:
