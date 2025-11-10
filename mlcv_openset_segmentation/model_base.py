@@ -80,6 +80,9 @@ class BaseSemanticSegmentationModel(L.LightningModule):
             out_channels=out_channels,
             kernel_size=conv_layer.kernel_size,
             stride=conv_layer.stride,
+            padding=conv_layer.padding,
+            dilation=conv_layer.dilation,
+            bias=(conv_layer.bias is not None),
         )
 
     def _calculate_segmentation_loss(
