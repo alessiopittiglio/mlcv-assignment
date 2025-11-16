@@ -76,7 +76,7 @@ def extract_embeddings(
         all_known_labels.append(masks_valid[known_mask].cpu())
         all_anomaly_embeddings.append(embeddings_valid[anomaly_mask].cpu())
 
-        del embeddings, outputs, images, gt_masks
+        del embeddings, images, gt_masks
         torch.cuda.empty_cache()
 
     # Concatenate results
@@ -135,9 +135,14 @@ def visualize_with_tsne(
     tsne = TSNE(n_components=2, perplexity=30, max_iter=1000, random_state=42)
     all_points_2d = tsne.fit_transform(all_points)
 
+    num_prototypes = len(prototypes)
     num_known = len(known_embeddings)
+
     known_2d = all_points_2d[:num_known]
     anomaly_2d = all_points_2d[num_known:]
+
+    known_2d = all_points_2d[num_prototypes : num_prototypes + num_known]
+    anomaly_2d = all_points_2d[num_prototypes + num_known :]
 
     plt.figure(figsize=(7, 4))
     ax = plt.gca()
