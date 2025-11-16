@@ -53,8 +53,7 @@ def extract_embeddings(
     print("Extracting embeddings from dataloader...")
     for images, gt_masks in tqdm(dataloader, desc="Processing batches"):
         images, gt_masks = images.to(device), gt_masks.to(device)
-        outputs = model(images)
-        embeddings = outputs["embeddings"]  # [N, D, H, W]
+        embeddings = model(images)  # [N, D, H, W]
 
         embeddings_flat = embeddings.permute(0, 2, 3, 1).reshape(
             -1, model.hparams.embedding_dim
