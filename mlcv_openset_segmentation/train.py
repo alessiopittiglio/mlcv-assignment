@@ -98,9 +98,10 @@ def main():
     save_dir /= run_id
     save_dir.mkdir(parents=True, exist_ok=True)
 
-    monitor_cfg = cfg.get("monitor", {})
-    monitor_metric = monitor_cfg.get("metric", "val_loss")
-    monitor_mode = monitor_cfg.get("mode", "min")
+    early_cfg = cfg.get("early_stopping", {})
+    monitor_metric = early_cfg.get("metric", "val_loss")
+    monitor_patience = early_cfg.get("patience", 5)
+    monitor_mode = early_cfg.get("mode", "min")
 
     model_checkpoint = ModelCheckpoint(
         dirpath=save_dir,
@@ -112,7 +113,7 @@ def main():
 
     early_stopping = EarlyStopping(
         monitor=monitor_metric,
-        patience=5,
+        patience=monitor_patience,
         mode=monitor_mode,
     )
 
