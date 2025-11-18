@@ -4,3 +4,4 @@ lightning_logs/
 wandb/
 data/
 *.ckpt
+*.pth
