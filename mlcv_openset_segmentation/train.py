@@ -99,6 +99,7 @@ def main():
     save_dir.mkdir(parents=True, exist_ok=True)
 
     early_cfg = cfg.get("early_stopping", {})
+    early_enabled = early_cfg.get("enabled", False)
     monitor_metric = early_cfg.get("metric", "val_loss")
     monitor_patience = early_cfg.get("patience", 5)
     monitor_mode = early_cfg.get("mode", "min")
@@ -111,17 +112,21 @@ def main():
         mode=monitor_mode,
     )
 
-    early_stopping = EarlyStopping(
-        monitor=monitor_metric,
-        patience=monitor_patience,
-        mode=monitor_mode,
-    )
-
     lr_monitor = LearningRateMonitor(logging_interval="step")
+
+    callbacks = [model_checkpoint, lr_monitor]
+
+    if early_enabled:
+        early_stopping = EarlyStopping(
+            monitor=monitor_metric,
+            patience=monitor_patience,
+            mode=monitor_mode,
+        )
+        callbacks.append(early_stopping)
 
     trainer = L.Trainer(
         logger=logger,
-        callbacks=[model_checkpoint, early_stopping, lr_monitor],
+        callbacks=callbacks,
         **cfg["trainer"],
     )
 
