@@ -86,7 +86,7 @@ def main():
 
     data_module = StreetHazardsDataModule(
         root_dir=cfg["data"]["root_dir"],
-        batch_size=cfg["data"]["batch_size"],
+        batch_size=cfg["data"]["train_batch_size"],
         num_workers=cfg["data"]["num_workers"],
         train_transform=train_transform,
         eval_transform=eval_transform,
