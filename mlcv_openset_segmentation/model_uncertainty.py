@@ -12,16 +12,16 @@ class UncertaintyModel(BaseSemanticSegmentationModel):
         self,
         num_classes: int = 13,
         encoder_name: str = "resnet50",
-        optimizer_kwargs: dict = None,
-        scheduler_kwargs: dict = None,
+        optimizer_params: dict = None,
+        scheduler_params: dict = None,
         uncertainty_type: str = "msp",
         sml_stats_path: str = "stats/sml_stats.pt",
     ):
         super().__init__(
             num_classes=num_classes,
             encoder_name=encoder_name,
-            optimizer_kwargs=optimizer_kwargs,
-            scheduler_kwargs=scheduler_kwargs,
+            optimizer_params=optimizer_params,
+            scheduler_params=scheduler_params,
         )
         self.save_hyperparameters()
 
@@ -68,15 +68,16 @@ class UncertaintyModel(BaseSemanticSegmentationModel):
         raise NotImplementedError(f"Unknown uncertainty type: '{utype}'")
 
     def test_step(self, batch, batch_idx):
-        images, gt_masks_with_anomalies = batch
-        outputs = self(images)
-        logits = outputs["out"]
+        images, targets = batch
+        
+        logits = self(images)
+        preds = torch.argmax(logits, dim=1)
 
-        gt_closed = gt_masks_with_anomalies.clone()
-        gt_closed[gt_masks_with_anomalies == ANOMALY_ID] = IGNORE_INDEX
+        masked_targets = targets.clone()
+        masked_targets[targets == ANOMALY_ID] = IGNORE_INDEX
 
         preds_closed = torch.argmax(logits, dim=1)
-        self.test_iou_closed.update(preds_closed, gt_closed)
+        self.test_iou_closed.update(preds_closed, masked_targets)
         self.log(
             "test_miou_closed",
             self.test_iou_closed,
@@ -85,7 +86,7 @@ class UncertaintyModel(BaseSemanticSegmentationModel):
             logger=True,
         )
 
-        anomaly_mask = gt_masks_with_anomalies == ANOMALY_ID
+        anomaly_mask = targets == ANOMALY_ID
         anomaly_scores = self._compute_anomaly_scores(logits)
 
         self.pixel_anomaly_scores.append(anomaly_scores.cpu().float().numpy().ravel())
