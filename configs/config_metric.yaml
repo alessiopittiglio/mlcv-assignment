@@ -3,7 +3,7 @@ save_dir: checkpoints/
 
 data:
   root_dir: data/
-  batch_size: 8
+  test_batch_size: 1
   num_workers: 4
   img_height: 512
   img_width: 1024
@@ -13,24 +13,10 @@ data:
 
 model:
   type: metric
-  model_name: deeplabv3_resnet50
-  use_aux_loss: true
-
-optimizer:
-  lr: 0.0001
-  weight_decay: 0.0001
-  fused: true
-
-scheduler:
-  factor: 0.1
-  patience: 5
-  mode: min
-
-monitor:
-  metric: val_total_dml_loss
-  mode: max
-  patience: 3
-
+  encoder_path: pretrained/encoder_epoch_20.pth
+  decoder_path: pretrained/decoder_epoch_20.pth
+  in_channels: 2048
+  
 trainer:
   accelerator: auto
   devices: 1
