@@ -9,7 +9,6 @@ import lightning as L
 
 from mlcv_openset_segmentation.datamodule import StreetHazardsDataModule
 from mlcv_openset_segmentation.model_uncertainty import UncertaintyModel
-from mlcv_openset_segmentation.model_metric import MetricLearningModel
 from mlcv_openset_segmentation.transforms import get_transforms
 
 torch.set_float32_matmul_precision("high")
@@ -52,18 +51,6 @@ def build_model_from_config(cfg, checkpoint_path):
             sml_stats_path="artifacts/sml_stats.pt",
             strict=False,
         )
-
-    elif model_type == "metric":
-        model = MetricLearningModel.load_from_checkpoint(
-            checkpoint_path,
-            num_classes=cfg["data"]["num_classes"],
-            model_name=cfg["model"]["model_name"],
-            use_aux_loss=cfg["model"]["use_aux_loss"],
-            optimizer_kwargs=cfg["optimizer"],
-            scheduler_kwargs=cfg["scheduler"],
-            strict=False,
-        )
-
     else:
         raise ValueError(f"Unknown model type '{model_type}'.")
 
