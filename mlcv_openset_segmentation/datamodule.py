@@ -86,15 +86,22 @@ class StreetHazardsOEDataModule(L.LightningDataModule):
         self.transform = transform
 
     def setup(self, stage=None):
-        base_train = StreetHazardsDataset(
-            root_dir=self.root_dir, split="train", transform=self.transform
-        )
-        oe_train = StreetHazardsOEDataset(base_train, self.outlier_dataset)
-        self.train_dataset = oe_train
+        if stage == "fit" or stage is None:
+            base_train = StreetHazardsDataset(
+                root_dir=self.root_dir, split="train", transform=self.transform
+            )
+            self.train_dataset = StreetHazardsOEDataset(
+                base_train, self.outlier_dataset
+            )
 
-        self.val_dataset = StreetHazardsDataset(
-            root_dir=self.root_dir, split="val", transform=self.transform
-        )
+            self.val_dataset = StreetHazardsDataset(
+                root_dir=self.root_dir, split="val", transform=self.transform
+            )
+
+        if stage == "test" or stage is None:
+            self.test_dataset = StreetHazardsDataset(
+                root_dir=self.root_dir, split="test", transform=self.transform
+            )
 
     def train_dataloader(self):
         return DataLoader(
@@ -107,6 +114,14 @@ class StreetHazardsOEDataModule(L.LightningDataModule):
     def val_dataloader(self):
         return DataLoader(
             self.val_dataset,
+            batch_size=self.batch_size,
+            num_workers=self.num_workers,
+            shuffle=False,
+        )
+
+    def test_dataloader(self):
+        return DataLoader(
+            self.test_dataset,
             batch_size=self.batch_size,
             num_workers=self.num_workers,
             shuffle=False,
