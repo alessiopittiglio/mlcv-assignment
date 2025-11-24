@@ -48,9 +48,6 @@ def build_model(cfg):
             scheduler_params=cfg["scheduler"],
         )
 
-    if model_type == "residual":
-        pass  # Placeholder for future model implementation
-
     raise ValueError(f"Unknown model type '{model_type}'.")
 
 
