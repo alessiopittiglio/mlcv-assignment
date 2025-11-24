@@ -11,17 +11,15 @@ class UncertaintyModel(BaseSemanticSegmentationModel):
     def __init__(
         self,
         num_classes: int = 13,
-        model_name: str = "deeplabv3_resnet50",
-        use_aux_loss: bool = True,
+        encoder_name: str = "resnet50",
         optimizer_kwargs: dict = None,
         scheduler_kwargs: dict = None,
         uncertainty_type: str = "msp",
-        sml_stats_path: str = "artifacts/sml_stats.pt",
+        sml_stats_path: str = "stats/sml_stats.pt",
     ):
         super().__init__(
             num_classes=num_classes,
-            model_name=model_name,
-            use_aux_loss=use_aux_loss,
+            encoder_name=encoder_name,
             optimizer_kwargs=optimizer_kwargs,
             scheduler_kwargs=scheduler_kwargs,
         )
@@ -39,8 +37,8 @@ class UncertaintyModel(BaseSemanticSegmentationModel):
             means = stats["means"].float().view(-1)
             stds = stats["stds"].float().view(-1).clamp_min(1e-6)
 
-            self.register_buffer("sml_means", means)
-            self.register_buffer("sml_stds", stds)
+            self.register_buffer("sml_means", means, persistent=False)
+            self.register_buffer("sml_stds", stds, persistent=False)
 
     @torch.no_grad()
     def _compute_anomaly_scores(self, logits: torch.Tensor) -> torch.Tensor:
@@ -78,10 +76,10 @@ class UncertaintyModel(BaseSemanticSegmentationModel):
         gt_closed[gt_masks_with_anomalies == ANOMALY_ID] = IGNORE_INDEX
 
         preds_closed = torch.argmax(logits, dim=1)
-        self.test_miou_closed.update(preds_closed, gt_closed)
+        self.test_iou_closed.update(preds_closed, gt_closed)
         self.log(
             "test_miou_closed",
-            self.test_miou_closed,
+            self.test_iou_closed,
             on_step=False,
             on_epoch=True,
             logger=True,
