@@ -57,7 +57,7 @@ class BaseSemanticSegmentationModel(L.LightningModule):
         loss = self.loss_fn(logits, targets)
 
         preds = torch.argmax(logits, dim=1)
-        self.train_miou.update(preds, targets)
+        self.train_iou.update(preds, targets)
 
         self.log(
             "train_loss", loss, on_step=True, on_epoch=True, prog_bar=True, logger=True
@@ -65,7 +65,7 @@ class BaseSemanticSegmentationModel(L.LightningModule):
 
         self.log(
             "train_miou",
-            self.train_miou,
+            self.train_iou,
             on_step=False,
             on_epoch=True,
             prog_bar=True,
@@ -111,6 +111,7 @@ class BaseSemanticSegmentationModel(L.LightningModule):
             "optimizer": optimizer,
             "lr_scheduler": {
                 "scheduler": scheduler,
+                "interval": "step",
                 "monitor": "val_miou",
                 "frequency": 1,
             },
