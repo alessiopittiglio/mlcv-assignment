@@ -2,27 +2,25 @@ import argparse
 import logging
 from pathlib import Path
 
+import lightning as L
 import torch
 import wandb
 import yaml
-
-import lightning as L
 from lightning.pytorch.callbacks import (
-    ModelCheckpoint,
     EarlyStopping,
     LearningRateMonitor,
+    ModelCheckpoint,
 )
 from lightning.pytorch.loggers import WandbLogger
 
 from mlcv_openset_segmentation.datamodule import StreetHazardsDataModule
 from mlcv_openset_segmentation.model_uncertainty import UncertaintyModel
-from mlcv_openset_segmentation.model_metric import MetricLearningModel
 from mlcv_openset_segmentation.transforms import get_transforms
 
 torch.set_float32_matmul_precision("high")
 
-logger = logging.getLogger(__name__)
 logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
 
 
 def parse_args():
@@ -30,10 +28,10 @@ def parse_args():
         description="Train a model for street hazard detection."
     )
     parser.add_argument(
-        "--config",
+        "--config-path",
         type=str,
         required=True,
-        help="Path to configuration YAML file",
+        help="Path to configuration YAML file.",
     )
     return parser.parse_args()
 
@@ -42,67 +40,34 @@ def build_model(cfg):
     model_type = cfg["model"].get("type", "uncertainty").lower()
 
     if model_type == "uncertainty":
-        model = UncertaintyModel(
+        return UncertaintyModel(
             num_classes=cfg["data"]["num_classes"],
-            model_name=cfg["model"]["model_name"],
-            use_aux_loss=cfg["model"]["use_aux_loss"],
+            encoder_name=cfg["model"]["encoder_name"],
             uncertainty_type=cfg["model"]["uncertainty_type"],
-            optimizer_kwargs=cfg["optimizer"],
-            scheduler_kwargs=cfg["scheduler"],
+            optimizer_params=cfg["optimizer"],
+            scheduler_params=cfg["scheduler"],
         )
 
-    elif model_type == "metric":
-        model = MetricLearningModel(
-            num_classes=cfg["data"]["num_classes"],
-            model_name=cfg["model"]["model_name"],
-            use_aux_loss=cfg["model"]["use_aux_loss"],
-            optimizer_kwargs=cfg["optimizer"],
-            scheduler_kwargs=cfg["scheduler"],
-        )
+    if model_type == "residual":
+        pass  # Placeholder for future model implementation
 
-    else:
-        raise ValueError(f"Unknown model type '{model_type}'.")
-
-    return model
+    raise ValueError(f"Unknown model type '{model_type}'.")
 
 
-def main():
-    args = parse_args()
+def setup_scheduler(cfg, steps_per_epoch):
+    max_epochs = cfg["trainer"]["max_epochs"]
+    total_steps = steps_per_epoch * max_epochs
 
-    config_path = Path(args.config)
-    if not config_path.exists():
-        raise FileNotFoundError(f"Configuration file {config_path} does not exist.")
+    scheduler_cfg = cfg.get("scheduler", {})
+    scheduler_cfg.setdefault("total_steps", total_steps)
+    cfg["scheduler"] = scheduler_cfg
 
-    with open(config_path, "r") as f:
-        cfg = yaml.safe_load(f)
 
-    run = wandb.init(project="mlcv-assignment")
-    run_id = run.id
-    logger = WandbLogger(experiment=run, config=cfg)
-
-    L.seed_everything(cfg["seed"], workers=True)
-
-    train_transform, eval_transform = get_transforms(cfg["data"])
-
-    data_module = StreetHazardsDataModule(
-        root_dir=cfg["data"]["root_dir"],
-        batch_size=cfg["data"]["train_batch_size"],
-        num_workers=cfg["data"]["num_workers"],
-        train_transform=train_transform,
-        eval_transform=eval_transform,
-    )
-
-    model = build_model(cfg)
-
-    save_dir = Path("checkpoints/")
-    save_dir /= run_id
-    save_dir.mkdir(parents=True, exist_ok=True)
-
-    early_cfg = cfg.get("early_stopping", {})
-    early_enabled = early_cfg.get("enabled", False)
+def build_callbacks(save_dir, early_cfg):
     monitor_metric = early_cfg.get("metric", "val_loss")
     monitor_patience = early_cfg.get("patience", 5)
     monitor_mode = early_cfg.get("mode", "min")
+    early_enabled = early_cfg.get("enabled", False)
 
     model_checkpoint = ModelCheckpoint(
         dirpath=save_dir,
@@ -124,8 +89,52 @@ def main():
         )
         callbacks.append(early_stopping)
 
+    return callbacks
+
+
+def main():
+    args = parse_args()
+
+    config_path = Path(args.config_path)
+    if not config_path.exists():
+        raise FileNotFoundError(f"Configuration file {config_path} does not exist.")
+
+    with config_path.open("r") as f:
+        cfg = yaml.safe_load(f)
+
+    run = wandb.init(project="mlcv-assignment", config=cfg)
+    wandb_run_id = run.id
+    wandb_logger = WandbLogger(experiment=run)
+
+    L.seed_everything(cfg["seed"], workers=True)
+
+    train_transform, eval_transform = get_transforms(cfg["data"])
+
+    data_module = StreetHazardsDataModule(
+        root_dir=cfg["data"]["root_dir"],
+        batch_size=cfg["data"]["train_batch_size"],
+        num_workers=cfg["data"]["num_workers"],
+        train_transform=train_transform,
+        eval_transform=eval_transform,
+    )
+    data_module.setup()
+
+    train_dataloader = data_module.train_dataloader()
+    steps_per_epoch = len(train_dataloader)
+    setup_scheduler(cfg, steps_per_epoch)
+
+    model = build_model(cfg)
+
+    save_dir = Path("checkpoints") / wandb_run_id
+    save_dir.mkdir(parents=True, exist_ok=True)
+
+    callbacks = build_callbacks(
+        save_dir=save_dir,
+        early_cfg=cfg.get("early_stopping", {}),
+    )
+
     trainer = L.Trainer(
-        logger=logger,
+        logger=wandb_logger,
         callbacks=callbacks,
         **cfg["trainer"],
     )
