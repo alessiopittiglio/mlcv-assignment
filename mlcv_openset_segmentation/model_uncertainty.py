@@ -1,5 +1,4 @@
 from pathlib import Path
-
 import numpy as np
 import torch
 from sklearn.metrics import average_precision_score
@@ -69,15 +68,14 @@ class UncertaintyModel(BaseSemanticSegmentationModel):
 
     def test_step(self, batch, batch_idx):
         images, targets = batch
-        
+
         logits = self(images)
         preds = torch.argmax(logits, dim=1)
 
         masked_targets = targets.clone()
         masked_targets[targets == ANOMALY_ID] = IGNORE_INDEX
 
-        preds_closed = torch.argmax(logits, dim=1)
-        self.test_iou_closed.update(preds_closed, masked_targets)
+        self.test_iou_closed.update(preds, masked_targets)
         self.log(
             "test_miou_closed",
             self.test_iou_closed,
