@@ -1,12 +1,14 @@
 import lightning as L
 from torch.utils.data import DataLoader
-from .dataset import StreetHazardsDataset
+
+from mlcv_openset_segmentation.dataset import StreetHazardsDataset
+from mlcv_openset_segmentation.dataset_oe import StreetHazardsOEDataset
 
 
 class StreetHazardsDataModule(L.LightningDataModule):
     def __init__(
         self,
-        root_dir: str = "data/",
+        root_dir: str = "data",
         batch_size: int = 32,
         num_workers: int = 4,
         train_transform=None,
@@ -64,6 +66,50 @@ class StreetHazardsDataModule(L.LightningDataModule):
             shuffle=False,
             pin_memory=True,
             persistent_workers=True if self.num_workers > 0 else False,
+        )
+
+
+class StreetHazardsOEDataModule(L.LightningDataModule):
+    def __init__(
+        self,
+        root_dir,
+        outlier_dataset,
+        batch_size: int = 8,
+        num_workers: int = 4,
+        transform=None,
+    ):
+        super().__init__()
+        self.root_dir = root_dir
+        self.outlier_dataset = outlier_dataset
+        self.batch_size = batch_size
+        self.num_workers = num_workers
+        self.transform = transform
+
+    def setup(self, stage=None):
+        base_train = StreetHazardsDataset(
+            root_dir=self.root_dir, split="train", transform=self.transform
+        )
+        oe_train = StreetHazardsOEDataset(base_train, self.outlier_dataset)
+        self.train_dataset = oe_train
+
+        self.val_dataset = StreetHazardsDataset(
+            root_dir=self.root_dir, split="val", transform=self.transform
+        )
+
+    def train_dataloader(self):
+        return DataLoader(
+            self.train_dataset,
+            batch_size=self.batch_size,
+            num_workers=self.num_workers,
+            shuffle=True,
+        )
+
+    def val_dataloader(self):
+        return DataLoader(
+            self.val_dataset,
+            batch_size=self.batch_size,
+            num_workers=self.num_workers,
+            shuffle=False,
         )
 
 
