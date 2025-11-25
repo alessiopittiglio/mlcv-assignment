@@ -11,7 +11,8 @@ from lightning.pytorch.callbacks import (
     LearningRateMonitor,
     ModelCheckpoint,
 )
-from lightning.pytorch.loggers import WandbLogger
+from lightning.pytorch.loggers import CSVLogger, WandbLogger
+from torchvision.datasets import VOCSegmentation
 
 from mlcv_openset_segmentation.datamodule import StreetHazardsDataModule
 from mlcv_openset_segmentation.model_uncertainty import UncertaintyModel
@@ -89,6 +90,28 @@ def build_callbacks(save_dir, early_cfg):
     return callbacks
 
 
+def build_datamodule(config):
+    train_tf, eval_tf, normalize_only = get_transforms(config["data"])
+
+    oe_cfg = config["data"]["outlier_dataset"]
+    voc_val = VOCSegmentation(
+        root=oe_cfg["root"],
+        year=oe_cfg["year"],
+        image_set="val",
+        download=oe_cfg["download"],
+    )
+
+    return StreetHazardsDataModule(
+        root_dir=config["data"]["root_dir"],
+        batch_size=config["data"]["train_batch_size"],
+        num_workers=config["data"]["num_workers"],
+        train_transform=train_tf,
+        eval_transform=eval_tf,
+        outlier_val_dataset=voc_val,
+        anomaly_normalize=normalize_only,
+    )
+
+
 def main():
     args = parse_args()
 
@@ -99,21 +122,12 @@ def main():
     with config_path.open("r") as f:
         cfg = yaml.safe_load(f)
 
-    run = wandb.init(project="mlcv-assignment", config=cfg)
-    wandb_run_id = run.id
-    wandb_logger = WandbLogger(experiment=run)
-
     L.seed_everything(cfg["seed"], workers=True)
 
-    train_transform, eval_transform = get_transforms(cfg["data"])
+    run = wandb.init(project="mlcv-assignment", config=cfg)
+    wandb_logger = WandbLogger(experiment=run)
 
-    data_module = StreetHazardsDataModule(
-        root_dir=cfg["data"]["root_dir"],
-        batch_size=cfg["data"]["train_batch_size"],
-        num_workers=cfg["data"]["num_workers"],
-        train_transform=train_transform,
-        eval_transform=eval_transform,
-    )
+    data_module = build_datamodule(cfg)
     data_module.setup()
 
     train_dataloader = data_module.train_dataloader()
@@ -122,7 +136,7 @@ def main():
 
     model = build_model(cfg)
 
-    save_dir = Path("checkpoints") / wandb_run_id
+    save_dir = Path("checkpoints") / run.id
     save_dir.mkdir(parents=True, exist_ok=True)
 
     callbacks = build_callbacks(
@@ -130,8 +144,10 @@ def main():
         early_cfg=cfg.get("early_stopping", {}),
     )
 
+    csv_logger = CSVLogger(save_dir="logs", name=run.id)
+
     trainer = L.Trainer(
-        logger=wandb_logger,
+        logger=[wandb_logger, csv_logger],
         callbacks=callbacks,
         **cfg["trainer"],
     )
