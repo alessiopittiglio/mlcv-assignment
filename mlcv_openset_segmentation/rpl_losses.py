@@ -4,10 +4,13 @@ import torch.nn.functional as F
 
 def disimilarity_entropy(logits, vanilla_logits, t=1.0):
     """
-    Based on:
-    https://github.com/yyliu01/RPL/blob/main/rpl_corocl.code/loss/PositiveEnergy.py
-    """
+    Dissimilarity entropy regularization.
 
+    Adapted from:
+    Liu et al., "Residual Pattern Learning for Pixel-wise Out-of-Distribution Detection
+    in Semantic Segmentation".
+    Source: https://github.com/yyliu01/RPL/blob/main/rpl_corocl.code/loss/PositiveEnergy.py
+    """
     n_prob = torch.clamp(torch.softmax(vanilla_logits, dim=1), min=1e-7)
     a_prob = torch.clamp(torch.softmax(logits, dim=1), min=1e-7)
 
@@ -24,10 +27,13 @@ def disimilarity_entropy(logits, vanilla_logits, t=1.0):
 
 def energy_loss(logits, targets, vanilla_logits, out_idx, t=1.0):
     """
-    Based on:
-    https://github.com/yyliu01/RPL/blob/main/rpl_corocl.code/loss/PositiveEnergy.py
-    """
+    Energy-based loss for pixel-wise OOD detection.
 
+    Adapted from:
+    Liu et al., "Residual Pattern Learning for Pixel-wise Out-of-Distribution Detection
+    in Semantic Segmentation".
+    Source: https://github.com/yyliu01/RPL/blob/main/rpl_corocl.code/loss/PositiveEnergy.py
+    """
     out_msk = targets == out_idx
     void_msk = targets == 255
 
