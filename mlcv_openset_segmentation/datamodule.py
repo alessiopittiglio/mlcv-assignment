@@ -13,6 +13,8 @@ class StreetHazardsDataModule(L.LightningDataModule):
         num_workers: int = 4,
         train_transform=None,
         eval_transform=None,
+        anomaly_normalize=None,
+        outlier_val_dataset=None,
     ):
         super().__init__()
         self.root_dir = root_dir
@@ -20,6 +22,8 @@ class StreetHazardsDataModule(L.LightningDataModule):
         self.num_workers = num_workers
         self.train_transform = train_transform
         self.eval_transform = eval_transform
+        self.anomaly_normalize = anomaly_normalize
+        self.outlier_dataset_val = outlier_val_dataset
 
     def prepare_data(self):
         pass
@@ -33,8 +37,18 @@ class StreetHazardsDataModule(L.LightningDataModule):
                 root_dir=self.root_dir, split="val", transform=self.eval_transform
             )
         if stage == "test" or stage is None:
-            self.test_dataset = StreetHazardsDataset(
-                root_dir=self.root_dir, split="test", transform=self.eval_transform
+            base_val = StreetHazardsDataset(
+                root_dir=self.root_dir, split="val", transform=self.eval_transform
+            )
+
+            self.test_dataset = StreetHazardsOEDataset(
+                base_dataset=base_val,
+                outlier_dataset=self.outlier_dataset_val,
+                inject_probability=1.0,
+                max_anomalies_per_image=3,
+                transform=self.anomaly_normalize,
+                deterministic=True,
+                seed=42,
             )
 
     def train_dataloader(self):
@@ -73,34 +87,58 @@ class StreetHazardsOEDataModule(L.LightningDataModule):
     def __init__(
         self,
         root_dir,
-        outlier_dataset,
+        outlier_train_dataset,
+        outlier_val_dataset,
         batch_size: int = 8,
         num_workers: int = 4,
-        transform=None,
+        train_transform=None,
+        eval_transform=None,
+        anomaly_normalize=None,
+        inject_probability: float = 0.5,
+        max_anomalies_per_image: int = 3,
     ):
         super().__init__()
         self.root_dir = root_dir
-        self.outlier_dataset = outlier_dataset
+        self.outlier_train_dataset = outlier_train_dataset
+        self.outlier_val_dataset = outlier_val_dataset
         self.batch_size = batch_size
         self.num_workers = num_workers
-        self.transform = transform
+        self.train_transform = train_transform
+        self.eval_transform = eval_transform
+        self.anomaly_normalize = anomaly_normalize
+        self.inject_probability = inject_probability
+        self.max_anomalies_per_image = max_anomalies_per_image
 
     def setup(self, stage=None):
         if stage == "fit" or stage is None:
             base_train = StreetHazardsDataset(
-                root_dir=self.root_dir, split="train", transform=self.transform
+                root_dir=self.root_dir, split="train", transform=self.train_transform
             )
             self.train_dataset = StreetHazardsOEDataset(
-                base_train, self.outlier_dataset
+                base_train,
+                self.outlier_train_dataset,
+                inject_probability=self.inject_probability,
+                max_anomalies_per_image=self.max_anomalies_per_image,
+                transform=self.anomaly_normalize
             )
 
-            self.val_dataset = StreetHazardsDataset(
-                root_dir=self.root_dir, split="val", transform=self.transform
+            base_val = StreetHazardsDataset(
+                root_dir=self.root_dir, split="val", transform=self.eval_transform
+            )
+
+            self.val_dataset = StreetHazardsOEDataset(
+                base_dataset=base_val,
+                outlier_dataset=self.outlier_val_dataset,
+                inject_probability=1.0,
+                max_anomalies_per_image=3,
+                transform=self.anomaly_normalize,
+                deterministic=True,
+                seed=42,
             )
 
         if stage == "test" or stage is None:
             self.test_dataset = StreetHazardsDataset(
-                root_dir=self.root_dir, split="test", transform=self.transform
+                root_dir=self.root_dir, split="test", transform=self.eval_transform
             )
 
     def train_dataloader(self):
