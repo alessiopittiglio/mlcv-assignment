@@ -18,17 +18,26 @@ class StreetHazardsOEDataset(torch.utils.data.Dataset):
         outlier_dataset,
         inject_probability: float = 0.3,
         max_anomalies_per_image: int = 2,
+        transform=None,
+        deterministic: bool = False,
+        seed: int = 42,
     ):
         self.base_dataset = base_dataset
         self.outlier_dataset = outlier_dataset
         self.inject_probability = inject_probability
         self.max_anomalies_per_image = max_anomalies_per_image
         self.anomaly_id = StreetHazardsDataset.ANOMALY_ID
+        self.transform = transform
+        self.deterministic = deterministic
+        self.seed = seed
 
     def __len__(self):
         return len(self.base_dataset)
 
     def __getitem__(self, idx):
+        if self.deterministic:
+            self._set_seed(idx)
+
         image, mask = self.base_dataset[idx]
 
         if random.random() > self.inject_probability:
@@ -39,6 +48,11 @@ class StreetHazardsOEDataset(torch.utils.data.Dataset):
             image, mask = self._inject_anomaly(image, mask)
 
         return image, mask
+
+    def _set_seed(self, idx):
+        seed = self.seed + idx
+        random.seed(seed)
+        np.random.seed(seed)
 
     def _inject_anomaly(self, image, mask):
         _, height, width = image.shape
@@ -85,6 +99,9 @@ class StreetHazardsOEDataset(torch.utils.data.Dataset):
             anomaly_image, anomaly_mask = self.outlier_dataset[idx]
 
             anomaly_image = transforms.ToTensor()(anomaly_image)
+            if self.transform is not None:
+                anomaly_image = self.transform(anomaly_image)
+
             anomaly_mask = torch.from_numpy(
                 np.array(anomaly_mask, dtype=np.int64)
             ).unsqueeze(0)
