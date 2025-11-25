@@ -23,4 +23,6 @@ def get_transforms(cfg: dict):
     val_transforms = v2.Compose(base_transforms)
     train_transforms = v2.Compose(train_transforms)
 
-    return train_transforms, val_transforms
+    normalize_only = v2.Normalize(mean=mean, std=std)
+
+    return train_transforms, val_transforms, normalize_only
