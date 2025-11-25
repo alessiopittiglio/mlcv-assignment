@@ -3,7 +3,7 @@ import numpy as np
 import torch
 from sklearn.metrics import average_precision_score
 
-from mlcv_openset_segmentation.model_base import (
+from mlcv_openset_segmentation.models.model_base import (
     BaseSemanticSegmentationModel,
     IGNORE_INDEX,
     ANOMALY_ID,

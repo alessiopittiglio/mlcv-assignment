@@ -6,8 +6,8 @@ import torch
 from sklearn.metrics import average_precision_score
 from torchmetrics.classification import BinaryAveragePrecision
 
-from mlcv_openset_segmentation.rpl import RPLDeepLab
-from mlcv_openset_segmentation.rpl_losses import energy_entropy_loss, energy_loss
+from mlcv_openset_segmentation.models.rpl import RPLDeepLab
+from mlcv_openset_segmentation.models.rpl_losses import energy_entropy_loss, energy_loss
 
 
 class ResidualPatternLearningModel(L.LightningModule):

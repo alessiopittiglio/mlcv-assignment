@@ -7,8 +7,8 @@ import yaml
 
 import lightning as L
 
-from mlcv_openset_segmentation.datamodule import StreetHazardsDataModule
-from mlcv_openset_segmentation.model_uncertainty import UncertaintyModel
+from mlcv_openset_segmentation.datasets.datamodule import StreetHazardsDataModule
+from mlcv_openset_segmentation.models.model_uncertainty import UncertaintyModel
 from mlcv_openset_segmentation.transforms import get_transforms
 
 torch.set_float32_matmul_precision("high")

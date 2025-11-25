@@ -4,7 +4,7 @@ import torch
 import torch.nn.functional as F
 from torchvision import transforms
 
-from mlcv_openset_segmentation.dataset import StreetHazardsDataset
+from mlcv_openset_segmentation.datasets.dataset import StreetHazardsDataset
 
 
 class StreetHazardsOEDataset(torch.utils.data.Dataset):

@@ -10,10 +10,10 @@ from lightning.pytorch.callbacks import LearningRateMonitor, ModelCheckpoint
 from lightning.pytorch.loggers import CSVLogger, WandbLogger
 from torchvision.datasets import VOCSegmentation
 
-from mlcv_openset_segmentation.datamodule import StreetHazardsOEDataModule
-from mlcv_openset_segmentation.dataset import StreetHazardsDataset
-from mlcv_openset_segmentation.model_base import BaseSemanticSegmentationModel
-from mlcv_openset_segmentation.model_residual import ResidualPatternLearningModel
+from mlcv_openset_segmentation.datasets.datamodule import StreetHazardsOEDataModule
+from mlcv_openset_segmentation.datasets.dataset import StreetHazardsDataset
+from mlcv_openset_segmentation.models.model_base import BaseSemanticSegmentationModel
+from mlcv_openset_segmentation.models.model_residual import ResidualPatternLearningModel
 from mlcv_openset_segmentation.transforms import get_transforms
 
 torch.set_float32_matmul_precision("high")

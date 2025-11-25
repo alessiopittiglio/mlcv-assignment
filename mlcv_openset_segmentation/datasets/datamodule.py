@@ -1,8 +1,8 @@
 import lightning as L
 from torch.utils.data import DataLoader
 
-from mlcv_openset_segmentation.dataset import StreetHazardsDataset
-from mlcv_openset_segmentation.dataset_oe import StreetHazardsOEDataset
+from mlcv_openset_segmentation.datasets.dataset import StreetHazardsDataset
+from mlcv_openset_segmentation.datasets.dataset_oe import StreetHazardsOEDataset
 
 
 class StreetHazardsDataModule(L.LightningDataModule):

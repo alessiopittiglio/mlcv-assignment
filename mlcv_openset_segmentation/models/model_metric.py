@@ -4,7 +4,7 @@ import lightning as L
 from torchmetrics import JaccardIndex
 from sklearn.metrics import roc_auc_score, average_precision_score, roc_curve
 
-from mlcv_openset_segmentation.dmlnet import ModelBuilder
+from mlcv_openset_segmentation.models.dmlnet import ModelBuilder
 
 ANOMALY_ID = 13
 IGNORE_INDEX = 255

@@ -6,8 +6,8 @@ import lightning as L
 import torch
 import yaml
 
-from mlcv_openset_segmentation.datamodule import StreetHazardsDataModule
-from mlcv_openset_segmentation.model_metric import MetricLearningModel
+from mlcv_openset_segmentation.datasets.datamodule import StreetHazardsDataModule
+from mlcv_openset_segmentation.models.model_metric import MetricLearningModel
 from mlcv_openset_segmentation.transforms import get_transforms
 
 torch.set_float32_matmul_precision("high")
