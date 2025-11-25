@@ -16,6 +16,18 @@ This project addresses the task of **semantic segmentation of unexpected objects
 └── stats
 ```
 
+## Execution Environment
+
+All experiments were conducted locally on a dedicated workstation with the following specifications:
+
+- CPU: Intel Core i5-12600KF (12th Gen)
+- GPU: NVIDIA RTX 3090
+- RAM: 64 GB
+- OS: Linux
+- Python: 3.9.21
+
+GPU acceleration is required for training and strongly recommended for inference.
+
 ## Setup and installation
 
 ### 1. Clone the repository
@@ -23,7 +35,6 @@ This project addresses the task of **semantic segmentation of unexpected objects
 ```
 git clone https://github.com/alessiopittiglio/mlcv-assignment.git
 cd mlcv-assignment
-pip install -e .
 ```
 
 ### 2. Create environment and install dependencies
@@ -37,6 +48,7 @@ conda activate mlcv_env
 
 # Install dependencies
 pip install -r requirements.txt
+pip install -e .
 ```
 
 ## Dataset
@@ -47,10 +59,45 @@ The datasets used include StreetHazards and Pascal VOC for Outlier Exposure. As 
 
 All model architectures, training procedures, and hyperparameters are managed through YAML configuration files located in the `configs/` directory.
 
-## Training models
+## Inference
+
+Multiple scripts are provided depending on the model type.
+
+### Uncertainty-based model
+
+Run inference using the uncertainty model:
+
+```
+python scripts/test.py --config configs/config_uncertainty.yaml
+```
+
+### Metric Learning model (pre-trained)
+
+The metric learning model is used as a pre-trained model and is NOT trained within this project.
+
+Inference is performed using:
+```
+python scripts/test_metric_model.py --config configs/config_metric.yaml
+```
+
+## Training
+
+### Train base segmentation models
 
 To train a model, use the unified training script `scripts/train.py` with a specific configuration file:
 
 ```
 python scripts/train.py --config path/to/model_config.yaml
 ```
+
+### Train Residual Pattern Learning module (RPL)
+
+The RPL module is trained on top of the base model:
+
+```
+python scripts/train_rpl.py --config configs/config_residual.yaml
+```
+
+### Model Weights
+
+All model weights required to reproduce the results can be downloaded from [here](https://placeholder-link.com). Once downloaded, the `.ckpt` files should be placed in the `checkpoints` directory.
