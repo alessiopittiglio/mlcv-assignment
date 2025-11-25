@@ -4,9 +4,10 @@ import numpy as np
 import lightning as L
 import torch
 from sklearn.metrics import average_precision_score
+from torchmetrics.classification import BinaryAveragePrecision
 
 from mlcv_openset_segmentation.rpl import RPLDeepLab
-from rpl_losses import energy_entropy_loss, energy_loss
+from mlcv_openset_segmentation.rpl_losses import energy_entropy_loss, energy_loss
 
 
 class ResidualPatternLearningModel(L.LightningModule):
@@ -27,6 +28,8 @@ class ResidualPatternLearningModel(L.LightningModule):
         self.backbone = deepcopy(base_segmenter).eval()
         for param in self.backbone.parameters():
             param.requires_grad = False
+
+        self.val_aupr = BinaryAveragePrecision(thresholds=200)
 
         self.test_scores = []
         self.test_labels = []
@@ -73,6 +76,13 @@ class ResidualPatternLearningModel(L.LightningModule):
         loss = self._compute_loss(logits_rpl, targets, vanilla_logits)
 
         self.log("val_loss", loss, on_epoch=True, prog_bar=True)
+
+        anomaly_mask = (targets == self.hparams.outlier_class_idx).long()
+        anomaly_scores = self._compute_anomaly_scores(logits_rpl)
+
+        self.val_aupr.update(anomaly_scores.flatten(), anomaly_mask.flatten())
+        self.log("val_aupr", self.val_aupr, on_epoch=True, prog_bar=True)
+
         return loss
 
     def test_step(self, batch, batch_idx):
@@ -91,7 +101,7 @@ class ResidualPatternLearningModel(L.LightningModule):
     def _compute_anomaly_scores(self, logits):
         prob = torch.softmax(logits, dim=1)
         entropy = -torch.sum(prob * torch.log(prob), dim=1)
-        energy  = -torch.logsumexp(logits, dim=1)
+        energy = -torch.logsumexp(logits, dim=1)
         return energy + entropy
 
     def on_test_epoch_end(self):
