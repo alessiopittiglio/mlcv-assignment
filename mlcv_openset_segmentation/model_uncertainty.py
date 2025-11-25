@@ -114,7 +114,7 @@ class UncertaintyModel(BaseSemanticSegmentationModel):
 
         self.test_iou_closed.update(preds, masked_targets)
         self.log(
-            "test_miou_closed",
+            "val_miou_closed",
             self.test_iou_closed,
             on_step=False,
             on_epoch=True,
@@ -137,7 +137,7 @@ class UncertaintyModel(BaseSemanticSegmentationModel):
         all_labels = np.concatenate(self.pixel_anomaly_labels)
 
         aupr = average_precision_score(all_labels, all_scores)
-        self.log("test_aupr_anomaly", aupr, prog_bar=True, logger=True)
+        self.log("val_aupr_anomaly", aupr, prog_bar=True, logger=True)
 
         self.pixel_anomaly_scores.clear()
         self.pixel_anomaly_labels.clear()
