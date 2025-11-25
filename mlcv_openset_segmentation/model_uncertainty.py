@@ -3,7 +3,11 @@ import numpy as np
 import torch
 from sklearn.metrics import average_precision_score
 
-from .model_base import BaseSemanticSegmentationModel, IGNORE_INDEX, ANOMALY_ID
+from mlcv_openset_segmentation.model_base import (
+    BaseSemanticSegmentationModel,
+    IGNORE_INDEX,
+    ANOMALY_ID,
+)
 
 
 class UncertaintyModel(BaseSemanticSegmentationModel):
