@@ -43,12 +43,15 @@ def build_model_from_config(cfg, checkpoint_path):
         model = UncertaintyModel.load_from_checkpoint(
             checkpoint_path,
             num_classes=cfg["data"]["num_classes"],
-            model_name=cfg["model"]["model_name"],
-            use_aux_loss=cfg["model"]["use_aux_loss"],
+            encoder_name=cfg["model"]["encoder_name"],
             uncertainty_type=cfg["model"]["uncertainty_type"],
             optimizer_kwargs=cfg["optimizer"],
             scheduler_kwargs=cfg["scheduler"],
             sml_stats_path="artifacts/sml_stats.pt",
+            use_boundary_postprocessing=cfg["model"]["use_boundary_postprocessing"],
+            boundary_postprocessing_params=cfg["model"][
+                "boundary_postprocessing_params"
+            ],
             strict=False,
         )
     else:
