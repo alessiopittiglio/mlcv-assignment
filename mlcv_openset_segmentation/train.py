@@ -55,10 +55,13 @@ def build_model(cfg):
 
 def setup_scheduler(cfg, steps_per_epoch):
     max_epochs = cfg["trainer"]["max_epochs"]
-    total_steps = steps_per_epoch * max_epochs
+    accumulate_batches = cfg["trainer"].get("accumulate_grad_batches", 1)
+
+    optimizer_steps_per_epoch = steps_per_epoch // accumulate_batches
+    total_steps = optimizer_steps_per_epoch * max_epochs
 
     scheduler_cfg = cfg.get("scheduler", {})
-    scheduler_cfg.setdefault("total_steps", total_steps)
+    scheduler_cfg["total_steps"] = total_steps
     cfg["scheduler"] = scheduler_cfg
 
 
