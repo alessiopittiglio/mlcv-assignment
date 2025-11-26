@@ -35,6 +35,18 @@ def parse_args():
     return parser.parse_args()
 
 
+def setup_scheduler(cfg, steps_per_epoch):
+    max_epochs = cfg["trainer"]["max_epochs"]
+    accumulate_batches = cfg["trainer"].get("accumulate_grad_batches", 1)
+
+    optimizer_steps_per_epoch = steps_per_epoch // accumulate_batches
+    total_steps = optimizer_steps_per_epoch * max_epochs
+
+    scheduler_cfg = cfg.get("scheduler", {})
+    scheduler_cfg["total_steps"] = total_steps
+    cfg["scheduler"] = scheduler_cfg
+
+
 def build_callbacks(save_dir: Path, early_cfg: dict):
     monitor_metric = early_cfg.get("metric", "val_loss")
     monitor_mode = early_cfg.get("mode", "min")
@@ -109,13 +121,15 @@ def main() -> None:
     backbone_ckpt = Path(cfg["backbone"]["checkpoint_path"])
     backbone = load_backbone_model(backbone_ckpt)
 
-    rpl_cfg = cfg["rpl"]
-
     model = ResidualPatternLearningModel(
         base_segmenter=backbone,
         outlier_class_idx=StreetHazardsDataset.ANOMALY_ID,
-        lr=rpl_cfg["lr"],
-        use_energy_entropy=rpl_cfg["use_energy_entropy"],
+        use_energy_entropy=cfg["model"]["use_energy_entropy"],
+        score_type=cfg["model"]["score_type"],
+        use_gaussian=cfg["model"]["use_gaussian_blur"],
+        optimizer_params=cfg["optimizer"],
+        scheduler_name=cfg["scheduler"]["name"],
+        scheduler_params=cfg["scheduler"]["params"],
     )
 
     voc_train, voc_val = build_outlier_datasets(cfg)
@@ -130,7 +144,15 @@ def main() -> None:
         train_transform=train_transform,
         eval_transform=eval_transform,
         anomaly_normalize=normalize_only,
+        inject_probability=data_cfg["anomaly_injection"]["probability"],
+        max_anomalies_per_image=data_cfg["anomaly_injection"][
+            "max_anomalies_per_image"
+        ],
     )
+
+    train_dataloader = datamodule.train_dataloader()
+    steps_per_epoch = len(train_dataloader)
+    setup_scheduler(cfg, steps_per_epoch)
 
     save_dir = Path(cfg["save_dir"]) / run.id
     save_dir.mkdir(parents=True, exist_ok=True)
