@@ -25,7 +25,7 @@ def disimilarity_entropy(logits, vanilla_logits, t=1.0):
     return entropy_disimilarity
 
 
-def energy_loss(logits, targets, vanilla_logits, out_idx, t=1.0):
+def energy_loss(logits, targets, vanilla_logits, out_idx):
     """
     Energy-based loss for pixel-wise OOD detection.
 
@@ -65,7 +65,6 @@ def energy_entropy_loss(
     targets: torch.Tensor,
     vanilla_logits: torch.Tensor,
     out_idx: int,
-    t: float = 1.0,
     alpha: float = 1.0,
 ) -> torch.Tensor:
     """
