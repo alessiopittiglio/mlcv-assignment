@@ -4,9 +4,56 @@ import torch.optim as optim
 import lightning as L
 import torchmetrics
 import segmentation_models_pytorch as smp
+from segmentation_models_pytorch.losses import DiceLoss, FocalLoss, LovaszLoss
 
 IGNORE_INDEX = 255
 ANOMALY_ID = 13
+
+
+class CombinedLoss(nn.Module):
+    def __init__(
+        self,
+        loss_a: nn.Module,
+        loss_b: nn.Module,
+        weight_a: float = 0.5,
+        weight_b: float = 0.5,
+    ):
+        super().__init__()
+        self.loss_a = loss_a
+        self.loss_b = loss_b
+        self.weight_a = weight_a
+        self.weight_b = weight_b
+
+    def forward(self, logits: torch.Tensor, targets: torch.Tensor) -> torch.Tensor:
+        return self.weight_a * self.loss_a(
+            logits, targets
+        ) + self.weight_b * self.loss_b(logits, targets)
+
+
+def build_loss(loss_type: str) -> nn.Module:
+    loss_type = loss_type.lower()
+
+    if loss_type == "ce":
+        return nn.CrossEntropyLoss(ignore_index=IGNORE_INDEX)
+
+    if loss_type == "dice":
+        return DiceLoss(mode="multiclass", ignore_index=IGNORE_INDEX)
+
+    if loss_type == "focal":
+        return FocalLoss(mode="multiclass", ignore_index=IGNORE_INDEX)
+
+    if loss_type == "lovasz":
+        return LovaszLoss(mode="multiclass", ignore_index=IGNORE_INDEX)
+
+    if loss_type == "ce_dice":
+        ce = nn.CrossEntropyLoss(ignore_index=IGNORE_INDEX)
+        dice = DiceLoss(mode="multiclass", ignore_index=IGNORE_INDEX)
+        return CombinedLoss(ce, dice)
+
+    raise ValueError(
+        f"Unsupported loss '{loss_type}'. "
+        "Choose from: ce, dice, focal, lovasz, ce_dice"
+    )
 
 
 class BaseSemanticSegmentationModel(L.LightningModule):
@@ -18,6 +65,7 @@ class BaseSemanticSegmentationModel(L.LightningModule):
         self,
         num_classes: int = 13,
         encoder_name: str = "resnet50",
+        loss_type: str = "ce",
         optimizer_params: dict = None,
         scheduler_params: dict = None,
     ):
@@ -31,7 +79,7 @@ class BaseSemanticSegmentationModel(L.LightningModule):
             activation=None,
         )
 
-        self.loss_fn = nn.CrossEntropyLoss(ignore_index=IGNORE_INDEX)
+        self.loss_fn = build_loss(loss_type)
 
         metric_args = {
             "task": "multiclass",

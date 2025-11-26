@@ -44,6 +44,7 @@ def build_model(cfg):
         return UncertaintyModel(
             num_classes=cfg["data"]["num_classes"],
             encoder_name=cfg["model"]["encoder_name"],
+            loss_type=cfg["model"]["loss_type"],
             uncertainty_type=cfg["model"]["uncertainty_type"],
             optimizer_params=cfg["optimizer"],
             scheduler_params=cfg["scheduler"],

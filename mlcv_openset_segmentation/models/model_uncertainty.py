@@ -16,6 +16,7 @@ class UncertaintyModel(BaseSemanticSegmentationModel):
         self,
         num_classes: int = 13,
         encoder_name: str = "resnet50",
+        loss_type: str = "ce",
         optimizer_params: dict = None,
         scheduler_params: dict = None,
         uncertainty_type: str = "msp",
@@ -26,6 +27,7 @@ class UncertaintyModel(BaseSemanticSegmentationModel):
         super().__init__(
             num_classes=num_classes,
             encoder_name=encoder_name,
+            loss_type=loss_type,
             optimizer_params=optimizer_params,
             scheduler_params=scheduler_params,
         )
