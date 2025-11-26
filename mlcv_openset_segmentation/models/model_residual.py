@@ -5,6 +5,7 @@ import lightning as L
 import torch
 from sklearn.metrics import average_precision_score
 from torchmetrics.classification import BinaryAveragePrecision
+from torchvision.transforms import GaussianBlur
 
 from mlcv_openset_segmentation.models.rpl import RPLDeepLab
 from mlcv_openset_segmentation.models.rpl_losses import energy_entropy_loss, energy_loss
@@ -16,8 +17,12 @@ class ResidualPatternLearningModel(L.LightningModule):
         self,
         base_segmenter: torch.nn.Module,
         outlier_class_idx: int,
-        lr: float = 1e-4,
         use_energy_entropy: bool = False,
+        score_type: str = "energy_entropy",
+        use_gaussian: bool = True,
+        optimizer_params: dict = None,
+        scheduler_name: str = None,
+        scheduler_params: dict = None,
     ):
         super().__init__()
         self.save_hyperparameters(ignore=["base_segmenter"])
@@ -33,6 +38,14 @@ class ResidualPatternLearningModel(L.LightningModule):
 
         self.test_scores = []
         self.test_labels = []
+
+        self.optimizer_params = optimizer_params or {}
+        self.scheduler_name = scheduler_name
+        self.scheduler_params = scheduler_params or {}
+
+        self.gaussian_blur = (
+            GaussianBlur(kernel_size=7, sigma=1.0) if use_gaussian else None
+        )
 
     def forward(self, x):
         return self.model(x)
@@ -99,10 +112,26 @@ class ResidualPatternLearningModel(L.LightningModule):
 
     @torch.no_grad()
     def _compute_anomaly_scores(self, logits):
-        prob = torch.softmax(logits, dim=1)
-        entropy = -torch.sum(prob * torch.log(prob), dim=1)
         energy = -torch.logsumexp(logits, dim=1)
-        return energy + entropy
+
+        if self.hparams.score_type == "energy":
+            score = energy
+
+        elif self.hparams.score_type == "energy_entropy":
+            probs = torch.softmax(logits, dim=1)
+            entropy = -(probs * torch.log(probs + 1e-8)).sum(dim=1)
+            score = energy + entropy
+
+        else:
+            raise ValueError(
+                f"Invalid score_type: {self.hparams.score_type}. "
+                "Expected 'energy' or 'energy_entropy'."
+            )
+
+        if self.gaussian_blur is not None:
+            score = self.gaussian_blur(score.unsqueeze(0)).squeeze(0)
+
+        return score
 
     def on_test_epoch_end(self):
         if not self.test_scores:
@@ -118,8 +147,26 @@ class ResidualPatternLearningModel(L.LightningModule):
         self.test_labels.clear()
 
     def configure_optimizers(self):
-        optimizer = torch.optim.Adam(
+        optimizer = torch.optim.AdamW(
             filter(lambda p: p.requires_grad, self.parameters()),
-            lr=self.hparams.lr,
+            **self.optimizer_params,
         )
-        return optimizer
+
+        if self.scheduler_name is None:
+            return optimizer
+
+        if self.scheduler_name == "one_cycle":
+            scheduler = torch.optim.lr_scheduler.OneCycleLR(
+                optimizer=optimizer,
+                **self.scheduler_params,
+            )
+
+            return {
+                "optimizer": optimizer,
+                "lr_scheduler": {
+                    "scheduler": scheduler,
+                    "interval": "step",
+                },
+            }
+
+        raise ValueError(f"Unsupported scheduler: {self.scheduler_name}")
