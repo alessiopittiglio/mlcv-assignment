@@ -7,54 +7,7 @@ Source: https://github.com/yyliu01/RPL
 
 import torch
 import torch.nn as nn
-from torchvision import transforms
 from copy import deepcopy
-
-
-class EnergyScore(nn.Module):
-    def __init__(self, segmenter, use_gaussian=True):
-        super().__init__()
-        self.segmenter = segmenter.eval()
-        self.use_gaussian = use_gaussian
-
-    @torch.no_grad()
-    def forward(self, inputs):
-
-        _, score = self.segmenter(inputs)
-        anomaly_score = -torch.logsumexp(score, dim=1)
-
-        if self.use_gaussian:
-            anomaly_score = transforms.GaussianBlur(7, sigma=1)(
-                anomaly_score.unsqueeze(0)
-            ).squeeze(0)
-
-        return score, anomaly_score
-
-
-class EnergyEntropyScore(nn.Module):
-
-    def __init__(self, segmenter, use_gaussian=True):
-        super().__init__()
-        self.segmenter = segmenter.eval()
-        self.use_gaussian = use_gaussian
-
-    @torch.no_grad()
-    def forward(self, inputs):
-
-        _, score = self.segmenter(inputs)
-
-        prob = torch.softmax(score, dim=1)
-        entropy = -torch.sum(prob * torch.log(prob), dim=1)
-        energy = -torch.logsumexp(score, dim=1)
-
-        anomaly_score = energy + entropy
-
-        if self.use_gaussian:
-            anomaly_score = transforms.GaussianBlur(7, sigma=1)(
-                anomaly_score.unsqueeze(0)
-            ).squeeze(0)
-
-        return score, anomaly_score
 
 
 class RPLDeepLab(nn.Module):
