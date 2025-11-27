@@ -66,7 +66,7 @@ def setup_scheduler(cfg, steps_per_epoch):
 
 
 def build_callbacks(save_dir, early_cfg):
-    monitor_metric = early_cfg.get("metric", "val_loss")
+    monitor_metric = early_cfg.get("monitor", "val_loss")
     monitor_patience = early_cfg.get("patience", 5)
     monitor_mode = early_cfg.get("mode", "min")
     early_enabled = early_cfg.get("enabled", False)
