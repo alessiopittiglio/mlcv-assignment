@@ -1,3 +1,4 @@
+fvcore==0.1.5.post20221221
 kornia==0.8.2
 lightning==2.5.1.post0
 matplotlib==3.10.7
@@ -6,8 +7,7 @@ Pillow==12.0.0
 PyYAML==6.0.3
 scikit_learn==1.7.2
 scipy==1.16.3
-seaborn==0.13.2
-segmentation_models_pytorch==0.5.0a
+segmentation_models_pytorch==0.5.0
 torch==2.6.0
 torchmetrics==1.7.1
 torchvision==0.21.0
