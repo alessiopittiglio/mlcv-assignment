@@ -4,7 +4,7 @@ save_dir: checkpoints/
 data:
   root_dir: data/
   test_batch_size: 1
-  num_workers: 4
+  num_workers: 6
   img_height: 512
   img_width: 1024
   img_mean: [0.485, 0.456, 0.406]
