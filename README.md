@@ -100,4 +100,4 @@ python scripts/train_rpl.py --config configs/config_residual.yaml
 
 ### Model Weights
 
-All model weights required to reproduce the results can be downloaded from [here](https://placeholder-link.com). Once downloaded, the `.ckpt` files should be placed in the `checkpoints` directory.
+All model weights required to reproduce the results can be downloaded from [here](https://drive.google.com/drive/folders/1oSkG5Hz4JckshYs1WJexe_KainhYmDgn?usp=sharing). Once downloaded, the `.ckpt` files should be placed in the `checkpoints` directory.
