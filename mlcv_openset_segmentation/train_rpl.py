@@ -6,7 +6,11 @@ import lightning as L
 import torch
 import wandb
 import yaml
-from lightning.pytorch.callbacks import LearningRateMonitor, ModelCheckpoint
+from lightning.pytorch.callbacks import (
+    EarlyStopping,
+    LearningRateMonitor,
+    ModelCheckpoint,
+)
 from lightning.pytorch.loggers import CSVLogger, WandbLogger
 from torchvision.datasets import VOCSegmentation
 
@@ -48,7 +52,7 @@ def setup_scheduler(cfg, steps_per_epoch):
 
 
 def build_callbacks(save_dir: Path, early_cfg: dict):
-    monitor_metric = early_cfg.get("metric", "val_loss")
+    monitor_metric = early_cfg.get("monitor", "val_loss")
     monitor_mode = early_cfg.get("mode", "min")
 
     model_checkpoint = ModelCheckpoint(
@@ -60,8 +64,9 @@ def build_callbacks(save_dir: Path, early_cfg: dict):
     )
 
     lr_monitor = LearningRateMonitor(logging_interval="step")
+    early_stopping = EarlyStopping(**early_cfg)
 
-    callbacks = [model_checkpoint, lr_monitor]
+    callbacks = [model_checkpoint, lr_monitor, early_stopping]
 
     return callbacks
 
@@ -129,7 +134,7 @@ def main() -> None:
         use_gaussian=cfg["model"]["use_gaussian_blur"],
         optimizer_params=cfg["optimizer"],
         scheduler_name=cfg["scheduler"]["name"],
-        scheduler_params=cfg["scheduler"]["params"],
+        scheduler_params=cfg["scheduler"],
     )
 
     voc_train, voc_val = build_outlier_datasets(cfg)
@@ -149,6 +154,7 @@ def main() -> None:
             "max_anomalies_per_image"
         ],
     )
+    datamodule.setup()
 
     train_dataloader = datamodule.train_dataloader()
     steps_per_epoch = len(train_dataloader)
