@@ -1,9 +1,7 @@
 from copy import deepcopy
 
-import numpy as np
 import lightning as L
 import torch
-from sklearn.metrics import average_precision_score
 from torchmetrics.classification import BinaryAveragePrecision
 from torchvision.transforms import GaussianBlur
 
@@ -35,9 +33,7 @@ class ResidualPatternLearningModel(L.LightningModule):
             param.requires_grad = False
 
         self.val_aupr = BinaryAveragePrecision(thresholds=200)
-
-        self.test_scores = []
-        self.test_labels = []
+        self.test_aupr = BinaryAveragePrecision(thresholds=500)
 
         self.optimizer_params = optimizer_params or {}
         self.scheduler_name = scheduler_name
@@ -47,12 +43,17 @@ class ResidualPatternLearningModel(L.LightningModule):
             GaussianBlur(kernel_size=7, sigma=1.0) if use_gaussian else None
         )
 
+    def train(self, mode: bool = True):
+        super().train(mode)
+        self.backbone.eval()
+        return self
+
     def forward(self, x):
         return self.model(x)
 
     def _compute_loss(
         self,
-        logits_rpl: torch.Tensor,
+        rpl_logits: torch.Tensor,
         targets: torch.Tensor,
         vanilla_logits: torch.Tensor,
     ):
@@ -61,7 +62,7 @@ class ResidualPatternLearningModel(L.LightningModule):
         )
 
         return loss_fn(
-            logits=logits_rpl,
+            logits=rpl_logits,
             targets=targets,
             vanilla_logits=vanilla_logits,
             out_idx=self.hparams.outlier_class_idx,
@@ -73,8 +74,8 @@ class ResidualPatternLearningModel(L.LightningModule):
         with torch.no_grad():
             vanilla_logits = self.backbone(images)
 
-        _, logits_rpl = self(images)
-        loss = self._compute_loss(logits_rpl, targets, vanilla_logits)
+        _, rpl_logits = self(images)
+        loss = self._compute_loss(rpl_logits, targets, vanilla_logits)
 
         self.log("train_loss", loss, on_step=True, on_epoch=True, prog_bar=True)
         return loss
@@ -85,13 +86,13 @@ class ResidualPatternLearningModel(L.LightningModule):
         with torch.no_grad():
             vanilla_logits = self.backbone(images)
 
-        _, logits_rpl = self(images)
-        loss = self._compute_loss(logits_rpl, targets, vanilla_logits)
+        _, rpl_logits = self(images)
+        loss = self._compute_loss(rpl_logits, targets, vanilla_logits)
 
         self.log("val_loss", loss, on_epoch=True, prog_bar=True)
 
         anomaly_mask = (targets == self.hparams.outlier_class_idx).long()
-        anomaly_scores = self._compute_anomaly_scores(logits_rpl)
+        anomaly_scores = self._compute_anomaly_scores(rpl_logits)
 
         self.val_aupr.update(anomaly_scores.flatten(), anomaly_mask.flatten())
         self.log("val_aupr", self.val_aupr, on_epoch=True, prog_bar=True)
@@ -104,11 +105,11 @@ class ResidualPatternLearningModel(L.LightningModule):
         with torch.no_grad():
             _, rpl_logits = self(images)
 
-        anomaly_mask = targets == self.hparams.outlier_class_idx
+        anomaly_mask = (targets == self.hparams.outlier_class_idx).long()
         anomaly_scores = self._compute_anomaly_scores(rpl_logits)
 
-        self.test_scores.append(anomaly_scores.cpu().numpy().ravel())
-        self.test_labels.append(anomaly_mask.cpu().numpy().astype(np.uint8).ravel())
+        self.test_aupr.update(anomaly_scores.flatten(), anomaly_mask.flatten())
+        self.log("test_aupr", self.test_aupr, on_epoch=True, prog_bar=True)
 
     @torch.no_grad()
     def _compute_anomaly_scores(self, logits):
@@ -132,19 +133,6 @@ class ResidualPatternLearningModel(L.LightningModule):
             score = self.gaussian_blur(score.unsqueeze(0)).squeeze(0)
 
         return score
-
-    def on_test_epoch_end(self):
-        if not self.test_scores:
-            return
-
-        scores = np.concatenate(self.test_scores)
-        labels = np.concatenate(self.test_labels)
-
-        aupr = average_precision_score(labels, scores)
-        self.log("test_aupr", aupr, prog_bar=True)
-
-        self.test_scores.clear()
-        self.test_labels.clear()
 
     def configure_optimizers(self):
         optimizer = torch.optim.AdamW(
