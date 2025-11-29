@@ -1,0 +1,14 @@
+Class,IoU (%)
+unlabeled,87.29
+building,80.43
+fence,59.54
+other,48.31
+pedestrian,70.69
+pole,39.74
+road line,78.46
+road,94.75
+sidewalk,83.26
+vegetation,88.23
+car,59.96
+wall,40.41
+traffic sign,57.07
