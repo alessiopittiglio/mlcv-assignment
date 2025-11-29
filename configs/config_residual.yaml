@@ -1,16 +1,24 @@
 seed: 42
 save_dir: checkpoints/
+output_checkpoint: rpl_trained.ckpt
+
+backbone:
+  checkpoint_path: checkpoints/phase1_best_segmenter.ckpt
+
+model:
+  type: residual
+  use_energy_entropy: true
+  loss_alpha: 1.0
+  score_type: energy
+  use_gaussian_blur: true
 
 data:
   root_dir: data/
-  train_batch_size: 8
-  test_batch_size: 4
+  batch_size: 16
   num_workers: 6
   img_height: 720
   img_width: 1280
   num_classes: 13
-  normalization: image_net
-  use_augmentation: true
   augmentation:
     horizontal_flip: true
     color_jitter: true
@@ -23,33 +31,27 @@ data:
     year: "2012"
     image_set: train
     download: false
-
-model:
-  type: uncertainty
-  encoder_name: resnet50
-  uncertainty_type: max_logit
-  use_boundary_postprocessing: false
-  boundary_postprocessing_params:
-    boundary_suppression: false
-    dilated_smoothing: false
-  loss_type: ce_dice
+  anomaly_injection:
+    probability: 0.5
+    max_anomalies_per_image: 3
 
 optimizer:
-  lr: 0.0002
+  lr: 0.00001
   weight_decay: 0.0001
   fused: true
 
 scheduler:
-  max_lr: 0.0002
+  name: null
+  max_lr:  0.00001
 
 early_stopping:
-  monitor: val_miou
+  monitor: val_aupr
   mode: max
-  patience: 5
+  patience: 4
+  min_delta: 0.001
 
 trainer:
-  accelerator: auto
+  accelerator: gpu
   devices: 1
   precision: 16-mixed
   max_epochs: 20
-  accumulate_grad_batches: 2
