@@ -6,7 +6,7 @@ import lightning as L
 import torch
 import yaml
 
-from mlcv_openset_segmentation.datasets.datamodule import StreetHazardsDataModule
+from mlcv_openset_segmentation.datasets.datamodule import StreetHazardsOEDataModule
 from mlcv_openset_segmentation.models.model_metric import MetricLearningModel
 from mlcv_openset_segmentation.transforms import get_transforms
 
@@ -17,9 +17,7 @@ logger = logging.getLogger(__name__)
 
 
 def parse_args():
-    parser = argparse.ArgumentParser(
-        description="Evaluate Metric Learning model."
-    )
+    parser = argparse.ArgumentParser(description="Evaluate Metric Learning model.")
     parser.add_argument(
         "--config-path",
         type=Path,
@@ -40,13 +38,15 @@ def main():
 
     L.seed_everything(cfg["seed"], workers=True)
 
-    _, eval_transform = get_transforms(cfg["data"])
+    _, eval_transform, _ = get_transforms(cfg["data"])
 
-    datamodule = StreetHazardsDataModule(
+    datamodule = StreetHazardsOEDataModule(
         root_dir=cfg["data"]["root_dir"],
         batch_size=cfg["data"]["test_batch_size"],
         num_workers=cfg["data"]["num_workers"],
         eval_transform=eval_transform,
+        outlier_train_dataset=None,
+        outlier_val_dataset=None,
     )
     datamodule.setup(stage="test")
 
